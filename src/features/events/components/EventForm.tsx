@@ -210,24 +210,34 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
 
     const inputStyle = (fieldName: string) => ({
         width: '100%',
-        padding: '10px',
+        padding: '11px 12px',
         fontSize: '14px',
-        borderRadius: '4px',
-        border: `1px solid ${touched[fieldName] && errors[fieldName as keyof FormErrors] ? '#dc2626' : '#d1d5db'}`,
+        borderRadius: '8px',
+        border: `1px solid ${touched[fieldName] && errors[fieldName as keyof FormErrors] ? '#ff5050' : 'rgba(255,255,255,0.12)'}`,
+        background: 'rgba(255,255,255,0.04)',
+        color: '#f0f0f5',
         outline: 'none',
     });
 
     const errorStyle = {
-        color: '#dc2626',
+        color: '#ff8a8a',
         fontSize: '12px',
         marginTop: '4px',
+    };
+
+    const labelStyle = {
+        display: 'block',
+        marginBottom: '5px',
+        fontWeight: 500,
+        color: '#c9c4d8',
+        fontSize: '14px',
     };
 
     return (
         <form onSubmit={handleSubmit} style={{ maxWidth: '800px' }}>
             {/* Título */}
             <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                <label style={labelStyle}>
                     Título *
                 </label>
                 <input
@@ -240,7 +250,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                     maxLength={100}
                     style={inputStyle('title')}
                 />
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: '#7c7790', marginTop: '4px' }}>
                     {formData.title.length}/100 caracteres
                 </div>
                 {touched.title && errors.title && (
@@ -250,7 +260,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
 
             {/* Descripción */}
             <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                <label style={labelStyle}>
                     Descripción *
                 </label>
                 <textarea
@@ -267,7 +277,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                         resize: 'vertical',
                     }}
                 />
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+                <div style={{ fontSize: '12px', color: '#7c7790', marginTop: '4px' }}>
                     {formData.description.length}/500 caracteres
                 </div>
                 {touched.description && errors.description && (
@@ -292,7 +302,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
             {/* Fecha */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px', marginTop: '15px' }}>
                 <div>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    <label style={labelStyle}>
                         Fecha *
                     </label>
                     <input
@@ -303,7 +313,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                         onBlur={() => handleBlur('date')}
                         required
                         min={new Date().toISOString().split('T')[0]}
-                        style={inputStyle('date')}
+                        style={{ ...inputStyle('date'), colorScheme: 'dark' }}
                     />
                     {touched.date && errors.date && (
                         <div style={errorStyle}>{errors.date}</div>
@@ -311,7 +321,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                 </div>
 
                 <div>
-                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                    <label style={labelStyle}>
                         Hora Inicio
                     </label>
                     <input
@@ -320,7 +330,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                         value={formData.startTime}
                         onChange={handleChange}
                         onBlur={() => handleBlur('startTime')}
-                        style={inputStyle('startTime')}
+                        style={{ ...inputStyle('startTime'), colorScheme: 'dark' }}
                     />
                     {touched.startTime && errors.startTime && (
                         <div style={errorStyle}>{errors.startTime}</div>
@@ -330,7 +340,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
 
             {/* Hora Fin */}
             <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                <label style={labelStyle}>
                     Hora Fin
                 </label>
                 <input
@@ -339,7 +349,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                     value={formData.endTime}
                     onChange={handleChange}
                     onBlur={() => handleBlur('endTime')}
-                    style={inputStyle('endTime')}
+                    style={{ ...inputStyle('endTime'), colorScheme: 'dark' }}
                 />
                 {touched.endTime && errors.endTime && (
                     <div style={errorStyle}>{errors.endTime}</div>
@@ -356,13 +366,14 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                     disabled={isLoading}
                     style={{
                         padding: '12px 24px',
-                        backgroundColor: '#8b5cf6',
+                        background: 'linear-gradient(90deg, #8b5cf6, #6366f1)',
                         color: 'white',
                         border: 'none',
-                        borderRadius: '4px',
+                        borderRadius: '10px',
                         cursor: isLoading ? 'not-allowed' : 'pointer',
                         fontSize: '16px',
-                        fontWeight: '500',
+                        fontWeight: '600',
+                        opacity: isLoading ? 0.7 : 1,
                     }}
                 >
                     {isLoading ? 'Guardando...' : event ? 'Actualizar Evento' : 'Crear Evento'}
@@ -373,10 +384,10 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                     disabled={isLoading}
                     style={{
                         padding: '12px 24px',
-                        backgroundColor: '#6b7280',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: '#e6e6f0',
+                        borderRadius: '10px',
                         cursor: isLoading ? 'not-allowed' : 'pointer',
                         fontSize: '16px',
                         fontWeight: '500',

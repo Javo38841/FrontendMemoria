@@ -32,24 +32,24 @@ export const MyEventsPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #1a1530 0%, #0a0a14 60%, #050508 100%)' }}>
       {/* Header */}
       <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
+        backgroundColor: 'rgba(20, 18, 32, 0.85)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '20px 40px',
       }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ margin: 0 }}>Mis Eventos</h1>
+          <h1 style={{ margin: 0, color: '#e6e6f0' }}>Mis Eventos</h1>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={() => navigate('/events')}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#6b7280',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: '#e6e6f0',
+                borderRadius: '8px',
                 cursor: 'pointer',
               }}
             >
@@ -59,11 +59,12 @@ export const MyEventsPage = () => {
               onClick={() => navigate('/events/create')}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#10b981',
+                background: 'linear-gradient(90deg, #8b5cf6, #6366f1)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
               + Crear Evento
@@ -77,9 +78,10 @@ export const MyEventsPage = () => {
         {error && (
           <div style={{
             padding: '15px',
-            backgroundColor: '#fee',
-            color: '#dc2626',
-            borderRadius: '4px',
+            backgroundColor: 'rgba(255,80,80,0.1)',
+            border: '1px solid rgba(255,80,80,0.2)',
+            color: '#ff8a8a',
+            borderRadius: '8px',
             marginBottom: '20px',
           }}>
             {error}
@@ -88,17 +90,17 @@ export const MyEventsPage = () => {
 
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p>Cargando tus eventos...</p>
+            <p style={{ color: '#9b95ad' }}>Cargando tus eventos...</p>
           </div>
         ) : events.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '40px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'rgba(20, 18, 32, 0.85)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.08)',
           }}>
-            <p style={{ fontSize: '18px', color: '#6b7280' }}>
+            <p style={{ fontSize: '18px', color: '#9b95ad' }}>
               Aún no has creado ningún evento.
             </p>
             <button
@@ -106,12 +108,13 @@ export const MyEventsPage = () => {
               style={{
                 marginTop: '20px',
                 padding: '12px 24px',
-                backgroundColor: '#8b5cf6',
+                background: 'linear-gradient(90deg, #8b5cf6, #6366f1)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 fontSize: '16px',
+                fontWeight: 600,
               }}
             >
               Crear mi primer evento
@@ -137,10 +140,12 @@ export const MyEventsPage = () => {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            backgroundColor: 'white',
+            backgroundColor: 'rgba(20, 18, 32, 0.95)',
+            border: '1px solid rgba(255,255,255,0.1)',
             padding: '20px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+            color: '#e6e6f0',
           }}>
             Eliminando evento...
           </div>

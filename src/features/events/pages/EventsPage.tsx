@@ -20,24 +20,26 @@ export const EventsPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+    <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #1a1530 0%, #0a0a14 60%, #050508 100%)' }}>
       {/* Header */}
       <div style={{
-        backgroundColor: 'white',
-        borderBottom: '1px solid #e5e7eb',
+        backgroundColor: 'rgba(20, 18, 32, 0.85)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '20px 40px',
       }}>
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '0 auto', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
           <div>
-            <h1 style={{ margin: 0, color: '#1f2937' }}>🎉 BeatMap</h1>
-            <p style={{ margin: '5px 0 0 0', color: '#6b7280' }}>
-              Hola, <strong>{user?.username}</strong>
+            <h1 style={{ margin: 0, color: '#ffffff', fontWeight: 800 }}>
+              Beat<span style={{ color: '#b07cf5' }}>Map</span>
+            </h1>
+            <p style={{ margin: '5px 0 0 0', color: '#9b95ad' }}>
+              Hola, <strong style={{ color: '#d2b8ff' }}>{user?.username}</strong>
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -45,10 +47,10 @@ export const EventsPage = () => {
               onClick={() => navigate('/my-events')}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#8b5cf6',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                color: '#e6e6f0',
+                borderRadius: '8px',
                 cursor: 'pointer',
               }}
             >
@@ -58,11 +60,12 @@ export const EventsPage = () => {
               onClick={() => navigate('/events/create')}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#10b981',
+                background: 'linear-gradient(90deg, #8b5cf6, #6366f1)',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '8px',
                 cursor: 'pointer',
+                fontWeight: 600,
               }}
             >
               + Crear Evento
@@ -71,10 +74,10 @@ export const EventsPage = () => {
               onClick={logout}
               style={{
                 padding: '10px 20px',
-                backgroundColor: '#ef4444',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
+                background: 'rgba(255, 80, 80, 0.12)',
+                border: '1px solid rgba(255, 80, 80, 0.3)',
+                color: '#ff8a8a',
+                borderRadius: '8px',
                 cursor: 'pointer',
               }}
             >
@@ -87,21 +90,21 @@ export const EventsPage = () => {
       {/* Content */}
       <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
         {/* Toggle Vista */}
-        <div style={{ 
-          marginBottom: '20px', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center' 
+        <div style={{
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
         }}>
-          <h2 style={{ margin: 0 }}>Todos los Eventos</h2>
+          <h2 style={{ margin: 0, color: '#e6e6f0' }}>Todos los Eventos</h2>
           <button
             onClick={() => setShowMap(!showMap)}
             style={{
               padding: '10px 20px',
-              backgroundColor: showMap ? '#6b7280' : '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
+              background: showMap ? 'rgba(255,255,255,0.06)' : 'linear-gradient(90deg, #8b5cf6, #6366f1)',
+              border: showMap ? '1px solid rgba(255,255,255,0.12)' : 'none',
+              color: showMap ? '#e6e6f0' : 'white',
+              borderRadius: '8px',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -115,9 +118,10 @@ export const EventsPage = () => {
         {error && (
           <div style={{
             padding: '15px',
-            backgroundColor: '#fee',
-            color: '#dc2626',
-            borderRadius: '4px',
+            backgroundColor: 'rgba(255,80,80,0.1)',
+            border: '1px solid rgba(255,80,80,0.2)',
+            color: '#ff8a8a',
+            borderRadius: '8px',
             marginBottom: '20px',
           }}>
             {error}
@@ -126,17 +130,17 @@ export const EventsPage = () => {
 
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <p>Cargando eventos...</p>
+            <p style={{ color: '#9b95ad' }}>Cargando eventos...</p>
           </div>
         ) : events.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: '40px',
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb',
+            backgroundColor: 'rgba(20, 18, 32, 0.85)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255,255,255,0.08)',
           }}>
-            <p style={{ fontSize: '18px', color: '#6b7280' }}>
+            <p style={{ fontSize: '18px', color: '#9b95ad' }}>
               No hay eventos disponibles. ¡Sé el primero en crear uno!
             </p>
           </div>
@@ -153,9 +157,9 @@ export const EventsPage = () => {
 
             {/* Lista de Eventos */}
             <div>
-              <h3 style={{ 
+              <h3 style={{
                 marginBottom: '15px',
-                color: '#6b7280',
+                color: '#9b95ad',
                 fontSize: '14px',
                 fontWeight: '500',
                 textTransform: 'uppercase',

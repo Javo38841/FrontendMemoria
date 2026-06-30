@@ -21,13 +21,15 @@ export const MapView = ({
     : center;
 
   return (
-    <div style={{ 
-      height, 
-      width: '100%', 
-      borderRadius: '8px', 
+    <div style={{
+      height,
+      width: '100%',
+      borderRadius: '12px',
       overflow: 'hidden',
-      border: '1px solid #e5e7eb',
-      marginBottom: '20px'
+      border: '1px solid rgba(255,255,255,0.08)',
+      marginBottom: '20px',
+      position: 'relative',
+      boxShadow: '0 0 30px rgba(120, 80, 220, 0.08)',
     }}>
       <MapContainer
         center={mapCenter}
@@ -54,13 +56,14 @@ export const MapView = ({
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
+          backgroundColor: 'rgba(20, 18, 32, 0.95)',
+          border: '1px solid rgba(255,255,255,0.1)',
           padding: '20px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
           zIndex: 1000,
         }}>
-          <p style={{ margin: 0, color: '#6b7280' }}>
+          <p style={{ margin: 0, color: '#9b95ad' }}>
             No hay eventos con ubicación disponible
           </p>
         </div>

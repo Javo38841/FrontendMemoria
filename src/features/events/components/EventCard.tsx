@@ -19,30 +19,32 @@ export const EventCard = ({ event, onEdit, onDelete, showActions = false }: Even
         <div
             onClick={handleCardClick}
             style={{
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '12px',
                 padding: '20px',
                 marginBottom: '15px',
-                backgroundColor: 'white',
-                cursor: 'pointer', // ✅ Agregado
-                transition: 'box-shadow 0.2s', // ✅ Agregado
+                backgroundColor: 'rgba(20, 18, 32, 0.85)',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.2s, border-color 0.2s',
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.boxShadow = '0 0 24px rgba(120, 80, 220, 0.15)';
+                e.currentTarget.style.borderColor = 'rgba(155, 110, 240, 0.35)';
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
             }}
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: '0 0 10px 0', color: '#1f2937' }}>
+                    <h3 style={{ margin: '0 0 10px 0', color: '#e6e6f0' }}>
                         {event.title}
                     </h3>
-                    <p style={{ margin: '0 0 10px 0', color: '#6b7280' }}>
+                    <p style={{ margin: '0 0 10px 0', color: '#9b95ad' }}>
                         {event.description}
                     </p>
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
+                    <div style={{ fontSize: '14px', color: '#9b95ad' }}>
                         <div>📍 {event.location}</div>
                         <div>📅 {event.date}</div>
                         {event.startTime && event.endTime && (
@@ -54,20 +56,20 @@ export const EventCard = ({ event, onEdit, onDelete, showActions = false }: Even
                 {showActions && (
                     <div
                         style={{ display: 'flex', gap: '10px', marginLeft: '20px' }}
-                        onClick={(e) => e.stopPropagation()} // ✅ Prevenir navegación al hacer click en botones
+                        onClick={(e) => e.stopPropagation()}
                     >
                         {onEdit && (
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation(); // ✅ Agregado
+                                    e.stopPropagation();
                                     onEdit(event);
                                 }}
                                 style={{
                                     padding: '8px 16px',
-                                    backgroundColor: '#3b82f6',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
+                                    background: 'rgba(99, 102, 241, 0.18)',
+                                    border: '1px solid rgba(99, 102, 241, 0.4)',
+                                    color: '#a5b4fc',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                 }}
@@ -78,15 +80,15 @@ export const EventCard = ({ event, onEdit, onDelete, showActions = false }: Even
                         {onDelete && (
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation(); // ✅ Agregado
+                                    e.stopPropagation();
                                     onDelete(event.id);
                                 }}
                                 style={{
                                     padding: '8px 16px',
-                                    backgroundColor: '#ef4444',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
+                                    background: 'rgba(255, 80, 80, 0.12)',
+                                    border: '1px solid rgba(255, 80, 80, 0.3)',
+                                    color: '#ff8a8a',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
                                     fontSize: '14px',
                                 }}

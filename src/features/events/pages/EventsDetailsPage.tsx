@@ -30,18 +30,23 @@ export const EventDetailsPage = () => {
 
     if (isLoading) {
         return (
-            <div style={{ padding: '40px', textAlign: 'center' }}>
-                <p>Cargando evento...</p>
+            <div style={{
+                minHeight: '100vh',
+                background: 'radial-gradient(circle at 20% 20%, #1a1530 0%, #0a0a14 60%, #050508 100%)',
+                padding: '40px',
+                textAlign: 'center',
+            }}>
+                <p style={{ color: '#9b95ad' }}>Cargando evento...</p>
             </div>
         );
     }
 
     if (error || !event) {
         return (
-            <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+            <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #1a1530 0%, #0a0a14 60%, #050508 100%)' }}>
                 <div style={{
-                    backgroundColor: 'white',
-                    borderBottom: '1px solid #e5e7eb',
+                    backgroundColor: 'rgba(20, 18, 32, 0.85)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
                     padding: '20px 40px',
                 }}>
                     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -49,10 +54,10 @@ export const EventDetailsPage = () => {
                             onClick={() => navigate('/events')}
                             style={{
                                 padding: '8px 16px',
-                                backgroundColor: '#6b7280',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '4px',
+                                background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                color: '#e6e6f0',
+                                borderRadius: '8px',
                                 cursor: 'pointer',
                             }}
                         >
@@ -62,7 +67,7 @@ export const EventDetailsPage = () => {
                 </div>
 
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <p style={{ color: '#dc2626', marginBottom: '20px' }}>
+                    <p style={{ color: '#ff8a8a', marginBottom: '20px' }}>
                         {error || 'Evento no encontrado'}
                     </p>
                 </div>
@@ -71,11 +76,11 @@ export const EventDetailsPage = () => {
     }
 
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+        <div style={{ minHeight: '100vh', background: 'radial-gradient(circle at 20% 20%, #1a1530 0%, #0a0a14 60%, #050508 100%)' }}>
             {/* Header */}
             <div style={{
-                backgroundColor: 'white',
-                borderBottom: '1px solid #e5e7eb',
+                backgroundColor: 'rgba(20, 18, 32, 0.85)',
+                borderBottom: '1px solid rgba(255,255,255,0.08)',
                 padding: '20px 40px',
             }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -83,49 +88,49 @@ export const EventDetailsPage = () => {
                         onClick={() => navigate('/events')}
                         style={{
                             padding: '8px 16px',
-                            backgroundColor: '#6b7280',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
+                            background: 'rgba(255,255,255,0.06)',
+                            border: '1px solid rgba(255,255,255,0.12)',
+                            color: '#e6e6f0',
+                            borderRadius: '8px',
                             cursor: 'pointer',
                             marginBottom: '10px',
                         }}
                     >
                         ← Volver a Eventos
                     </button>
-                    <h1 style={{ margin: 0 }}>{event.title}</h1>
+                    <h1 style={{ margin: 0, color: '#e6e6f0' }}>{event.title}</h1>
                 </div>
             </div>
 
             {/* Content */}
             <div style={{ padding: '40px', maxWidth: '1200px', margin: '0 auto' }}>
                 <div style={{
-                    backgroundColor: 'white',
+                    backgroundColor: 'rgba(20, 18, 32, 0.85)',
                     padding: '30px',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255,255,255,0.08)',
                 }}>
                     {/* Descripción */}
                     <div style={{ marginBottom: '30px' }}>
-                        <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>Descripción</h2>
-                        <p style={{ color: '#6b7280', lineHeight: '1.6' }}>
+                        <h2 style={{ fontSize: '18px', marginBottom: '10px', color: '#d2b8ff' }}>Descripción</h2>
+                        <p style={{ color: '#9b95ad', lineHeight: '1.6' }}>
                             {event.description}
                         </p>
                     </div>
 
                     {/* Detalles */}
                     <div style={{ marginBottom: '30px' }}>
-                        <h3 style={{ fontSize: '16px', marginBottom: '15px' }}>Detalles</h3>
-                        <div style={{ fontSize: '16px', color: '#6b7280' }}>
+                        <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#d2b8ff' }}>Detalles</h3>
+                        <div style={{ fontSize: '16px', color: '#9b95ad' }}>
                             <div style={{ marginBottom: '10px' }}>
-                                <strong>📍 Ubicación:</strong> {event.location}
+                                <strong style={{ color: '#e6e6f0' }}>📍 Ubicación:</strong> {event.location}
                             </div>
                             <div style={{ marginBottom: '10px' }}>
-                                <strong>📅 Fecha:</strong> {event.date}
+                                <strong style={{ color: '#e6e6f0' }}>📅 Fecha:</strong> {event.date}
                             </div>
                             {event.startTime && event.endTime && (
                                 <div style={{ marginBottom: '10px' }}>
-                                    <strong>🕐 Horario:</strong> {event.startTime} - {event.endTime}
+                                    <strong style={{ color: '#e6e6f0' }}>🕐 Horario:</strong> {event.startTime} - {event.endTime}
                                 </div>
                             )}
                         </div>
@@ -134,7 +139,7 @@ export const EventDetailsPage = () => {
                     {/* Mapa */}
                     {event.latitude && event.longitude && (
                         <div>
-                            <h3 style={{ fontSize: '16px', marginBottom: '15px' }}>
+                            <h3 style={{ fontSize: '16px', marginBottom: '15px', color: '#d2b8ff' }}>
                                 Ubicación en el Mapa
                             </h3>
                             <MapView

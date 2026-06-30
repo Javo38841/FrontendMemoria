@@ -133,7 +133,7 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
 
     return (
         <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px', color: '#c9c4d8' }}>
                 📍 Ubicación del Evento
             </label>
 
@@ -148,12 +148,20 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
                         padding: '12px 40px 12px 12px',
                         fontSize: '14px',
                         borderRadius: '8px',
-                        border: '2px solid #e5e7eb',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        background: 'rgba(255,255,255,0.04)',
+                        color: '#f0f0f5',
                         outline: 'none',
                         transition: 'border-color 0.2s',
                     }}
-                    onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                    onBlur={() => setTimeout(() => setShowResults(false), 200)}
+                    onFocus={(e) => {
+                        e.currentTarget.style.borderColor = '#9b6ef0';
+                        searchResults.length > 0 && setShowResults(true);
+                    }}
+                    onBlur={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                        setTimeout(() => setShowResults(false), 200);
+                    }}
                 />
 
                 {isSearching && (
@@ -166,8 +174,8 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
                         <div style={{
                             width: '20px',
                             height: '20px',
-                            border: '3px solid #e5e7eb',
-                            borderTop: '3px solid #8b5cf6',
+                            border: '3px solid rgba(255,255,255,0.12)',
+                            borderTop: '3px solid #9b6ef0',
                             borderRadius: '50%',
                             animation: 'spin 1s linear infinite',
                         }} />
@@ -181,14 +189,14 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
                         top: '100%',
                         left: 0,
                         right: 0,
-                        backgroundColor: 'white',
-                        border: '2px solid #e5e7eb',
+                        backgroundColor: '#14121f',
+                        border: '1px solid rgba(255,255,255,0.12)',
                         borderRadius: '8px',
                         marginTop: '4px',
                         maxHeight: '200px',
                         overflowY: 'auto',
                         zIndex: 1000,
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
                     }}>
                         {searchResults.map((result, index) => (
                             <div
@@ -197,13 +205,13 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
                                 style={{
                                     padding: '12px',
                                     cursor: 'pointer',
-                                    borderBottom: index < searchResults.length - 1 ? '1px solid #f3f4f6' : 'none',
+                                    borderBottom: index < searchResults.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
                                     transition: 'background-color 0.2s',
                                 }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                             >
-                                <div style={{ fontSize: '14px', color: '#1f2937' }}>
+                                <div style={{ fontSize: '14px', color: '#e6e6f0' }}>
                                     {result.display_name}
                                 </div>
                             </div>
@@ -216,7 +224,7 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
             <div style={{
                 borderRadius: '12px',
                 overflow: 'hidden',
-                border: '2px solid #e5e7eb',
+                border: '1px solid rgba(255,255,255,0.1)',
                 height: '300px',
             }}>
                 <MapContainer
@@ -236,7 +244,7 @@ export const LocationPicker = ({ latitude, longitude, location, onLocationChange
 
             <p style={{
                 fontSize: '12px',
-                color: '#6b7280',
+                color: '#7c7790',
                 marginTop: '8px',
                 fontStyle: 'italic',
             }}>
