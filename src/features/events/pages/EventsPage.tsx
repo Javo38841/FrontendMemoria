@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { LogoutButton } from '../../auth/components/LogoutButton';
 import { useEvents } from '../hooks/useEvents';
 import { EventCard } from '../components/EventCard';
 import { EventFilters } from '../components/EventFilters';
@@ -9,7 +10,7 @@ import { EMPTY_FILTER_CRITERIA, filterEvents } from '../utils/filterEvents';
 import type { EventFilterCriteria } from '../utils/filterEvents';
 
 export const EventsPage = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { events, isLoading, error, fetchEvents } = useEvents();
   const navigate = useNavigate();
   const [showMap, setShowMap] = useState(true);
@@ -76,19 +77,7 @@ export const EventsPage = () => {
             >
               + Crear Evento
             </button>
-            <button
-              onClick={logout}
-              style={{
-                padding: '10px 20px',
-                background: 'rgba(255, 80, 80, 0.12)',
-                border: '1px solid rgba(255, 80, 80, 0.3)',
-                color: '#ff8a8a',
-                borderRadius: '8px',
-                cursor: 'pointer',
-              }}
-            >
-              Cerrar Sesión
-            </button>
+            <LogoutButton />
           </div>
         </div>
       </div>

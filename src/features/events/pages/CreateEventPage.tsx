@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useEvents } from '../hooks/useEvents';
 import { EventForm } from '../components/EventForm';
+import { LogoutButton } from '../../auth/components/LogoutButton';
 import type { EventFormData } from '../types/events.types';
 
 export const CreateEventPage = () => {
@@ -27,8 +28,9 @@ export const CreateEventPage = () => {
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '20px 40px',
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0, color: '#e6e6f0' }}>Crear Nuevo Evento</h1>
+          <LogoutButton />
         </div>
       </div>
 

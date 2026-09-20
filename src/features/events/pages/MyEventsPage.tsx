@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useEvents } from '../hooks/useEvents';
 import { EventCard } from '../components/EventCard';
+import { LogoutButton } from '../../auth/components/LogoutButton';
 import type { Event } from '../types/events.types';
 
 export const MyEventsPage = () => {
@@ -69,6 +70,7 @@ export const MyEventsPage = () => {
             >
               + Crear Evento
             </button>
+            <LogoutButton />
           </div>
         </div>
       </div>

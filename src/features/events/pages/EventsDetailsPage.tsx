@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { eventsService } from '../services/events.services';
 import { MapView } from '../components/map/MapView';
+import { LogoutButton } from '../../auth/components/LogoutButton';
 import type { Event } from '../types/events.types';
 
 export const EventDetailsPage = () => {
@@ -49,7 +50,7 @@ export const EventDetailsPage = () => {
                     borderBottom: '1px solid rgba(255,255,255,0.08)',
                     padding: '20px 40px',
                 }}>
-                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <button
                             onClick={() => navigate('/events')}
                             style={{
@@ -63,6 +64,7 @@ export const EventDetailsPage = () => {
                         >
                             ← Volver a Eventos
                         </button>
+                        <LogoutButton />
                     </div>
                 </div>
 
@@ -83,22 +85,25 @@ export const EventDetailsPage = () => {
                 borderBottom: '1px solid rgba(255,255,255,0.08)',
                 padding: '20px 40px',
             }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <button
-                        onClick={() => navigate('/events')}
-                        style={{
-                            padding: '8px 16px',
-                            background: 'rgba(255,255,255,0.06)',
-                            border: '1px solid rgba(255,255,255,0.12)',
-                            color: '#e6e6f0',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            marginBottom: '10px',
-                        }}
-                    >
-                        ← Volver a Eventos
-                    </button>
-                    <h1 style={{ margin: 0, color: '#e6e6f0' }}>{event.title}</h1>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                        <button
+                            onClick={() => navigate('/events')}
+                            style={{
+                                padding: '8px 16px',
+                                background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.12)',
+                                color: '#e6e6f0',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                marginBottom: '10px',
+                            }}
+                        >
+                            ← Volver a Eventos
+                        </button>
+                        <h1 style={{ margin: 0, color: '#e6e6f0' }}>{event.title}</h1>
+                    </div>
+                    <LogoutButton />
                 </div>
             </div>
 

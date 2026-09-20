@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useEvents } from '../hooks/useEvents';
 import { EventForm } from '../components/EventForm';
+import { LogoutButton } from '../../auth/components/LogoutButton';
 import type { EventFormData, Event } from '../types/events.types';
 
 export const EditEventPage = () => {
@@ -61,8 +62,9 @@ export const EditEventPage = () => {
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '20px 40px',
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0, color: '#e6e6f0' }}>Editar Evento</h1>
+          <LogoutButton />
         </div>
       </div>
 
