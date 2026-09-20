@@ -129,6 +129,36 @@ test.describe('Formulario de creación: validación', () => {
 // Datos de un evento tal como los guarda la app: con horas, que el backend devuelve como HH:mm:ss
 const ubicacion = { location: 'Plaza Independencia, Concepción, Chile', latitude: -36.827, longitude: -73.0503 };
 
+test.describe('Formulario de creación: accesibilidad', () => {
+  test('cada campo se encuentra y se puede llenar por su etiqueta', async ({ page }) => {
+    await openCreateForm(page);
+
+    await page.getByLabel('Título').fill('Título por etiqueta');
+    await page.getByLabel('Descripción').fill('Descripción por etiqueta');
+    await page.getByLabel('Fecha').fill('2031-05-05');
+    await page.getByLabel('Hora Inicio').fill('20:00');
+    await page.getByLabel('Hora Fin').fill('22:00');
+
+    await expect(field(page, 'title')).toHaveValue('Título por etiqueta');
+    await expect(field(page, 'description')).toHaveValue('Descripción por etiqueta');
+    await expect(field(page, 'date')).toHaveValue('2031-05-05');
+    await expect(field(page, 'startTime')).toHaveValue('20:00');
+    await expect(field(page, 'endTime')).toHaveValue('22:00');
+  });
+
+  test('el formulario de edición también asocia sus etiquetas', async ({ page }) => {
+    const TITLE = titleOf('etiquetas edición');
+    await createEventViaApi(user, { title: TITLE, date: '2031-06-15', ...ubicacion });
+    await stubExternalServices(page);
+    await signIn(page, user, '/my-events');
+
+    await page.getByRole('button', { name: /Editar/ }).click();
+
+    await expect(page.getByLabel('Título')).toHaveValue(TITLE);
+    await expect(page.getByLabel('Fecha')).toHaveValue('2031-06-15');
+  });
+});
+
 test.describe('Crear un evento', () => {
   test('crea un evento eligiendo la ubicación con un clic en el mapa', async ({ page }) => {
     const TITLE = titleOf('crear');

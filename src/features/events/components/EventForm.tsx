@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { LocationPicker } from './map/LocationPicker.tsx';
 import type { Event, EventFormData } from '../types/events.types';
 import {
@@ -31,6 +31,8 @@ interface FormErrors {
 }
 
 export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormProps) => {
+    // ids únicos para asociar cada <label> con su campo (accesibilidad)
+    const uid = useId();
     const [formData, setFormData] = useState<EventFormData>({
         title: '',
         description: '',
@@ -246,12 +248,13 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
         <form onSubmit={handleSubmit} style={{ maxWidth: '800px' }}>
             {/* Título */}
             <div style={{ marginBottom: '15px' }}>
-                <label style={labelStyle}>
+                <label htmlFor={`${uid}-title`} style={labelStyle}>
                     Título *
                 </label>
                 <input
                     type="text"
                     name="title"
+                    id={`${uid}-title`}
                     value={formData.title}
                     onChange={handleChange}
                     onBlur={() => handleBlur('title')}
@@ -267,11 +270,12 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
 
             {/* Descripción */}
             <div style={{ marginBottom: '15px' }}>
-                <label style={labelStyle}>
+                <label htmlFor={`${uid}-description`} style={labelStyle}>
                     Descripción *
                 </label>
                 <textarea
                     name="description"
+                    id={`${uid}-description`}
                     value={formData.description}
                     onChange={handleChange}
                     onBlur={() => handleBlur('description')}
@@ -307,12 +311,13 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
             {/* Fecha */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px', marginTop: '15px' }}>
                 <div>
-                    <label style={labelStyle}>
+                    <label htmlFor={`${uid}-date`} style={labelStyle}>
                         Fecha *
                     </label>
                     <input
                         type="date"
                         name="date"
+                        id={`${uid}-date`}
                         value={formData.date}
                         onChange={handleChange}
                         onBlur={() => handleBlur('date')}
@@ -324,12 +329,13 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                 </div>
 
                 <div>
-                    <label style={labelStyle}>
+                    <label htmlFor={`${uid}-startTime`} style={labelStyle}>
                         Hora Inicio
                     </label>
                     <input
                         type="time"
                         name="startTime"
+                        id={`${uid}-startTime`}
                         value={formData.startTime}
                         onChange={handleChange}
                         onBlur={() => handleBlur('startTime')}
@@ -343,12 +349,13 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
 
             {/* Hora Fin */}
             <div style={{ marginBottom: '20px' }}>
-                <label style={labelStyle}>
+                <label htmlFor={`${uid}-endTime`} style={labelStyle}>
                     Hora Fin
                 </label>
                 <input
                     type="time"
                     name="endTime"
+                    id={`${uid}-endTime`}
                     value={formData.endTime}
                     onChange={handleChange}
                     onBlur={() => handleBlur('endTime')}
