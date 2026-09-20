@@ -29,13 +29,4 @@ export const authService = {
       password: credentials.password,
     });
   },
-
-  /**
-   * Logout (solo frontend - no hay endpoint)
-   * Limpia el token del localStorage
-   */
-  logout: (): void => {
-    // No hay endpoint de logout en el backend
-    // Solo limpiamos el storage desde el AuthProvider
-  },
 };
