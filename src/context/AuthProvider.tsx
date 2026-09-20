@@ -3,6 +3,7 @@ import { AuthContext } from './AuthContext';
 import { authService } from '../features/auth/services/auth.services';
 import { storageService } from '../services/storage.service';
 import { setAuthToken } from '../services/api.config';
+import { isTokenExpired } from '../utils/jwt';
 import type { 
   User, 
   LoginCredentials, 
@@ -24,7 +25,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const savedToken = storageService.getToken();
       const savedUser = storageService.getUser<User>();
 
-      if (savedToken && savedUser) {
+      if (savedToken && isTokenExpired(savedToken)) {
+        storageService.clearAuth();
+      } else if (savedToken && savedUser) {
         setToken(savedToken);
         setUser(savedUser);
         setAuthToken(savedToken);

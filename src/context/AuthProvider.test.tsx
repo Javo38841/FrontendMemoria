@@ -95,6 +95,24 @@ describe('AuthProvider — inicialización', () => {
   })
 })
 
+describe('AuthProvider — token vencido', () => {
+  it('descarta la sesión guardada si el token ya venció', async () => {
+    const payload = btoa(JSON.stringify({ exp: 1 })).replace(/=+$/, '')
+    mockStorageService.getToken.mockReturnValue(`eyJhbGciOiJIUzI1NiJ9.${payload}.firma`)
+    mockStorageService.getUser.mockReturnValue({ id: 2, username: 'tomas' })
+
+    renderProvider()
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading').textContent).toBe('false')
+    })
+    expect(screen.getByTestId('authenticated').textContent).toBe('false')
+    expect(screen.getByTestId('user').textContent).toBe('none')
+    expect(mockStorageService.clearAuth).toHaveBeenCalled()
+    expect(mockSetAuthToken).not.toHaveBeenCalled()
+  })
+})
+
 describe('AuthProvider — login', () => {
   it('sets user and token after successful login', async () => {
     mockAuthService.login.mockResolvedValue({ token: 'jwt-abc', id: 1, username: 'tomas' })
