@@ -94,6 +94,29 @@ describe('validateTime', () => {
     expect(validateTime('09:30')).toEqual({ isValid: true })
     expect(validateTime('23:59')).toEqual({ isValid: true })
   })
+
+  it('accepts optional seconds (HH:mm:ss), as the backend returns them', () => {
+    expect(validateTime('20:00:00')).toEqual({ isValid: true })
+    expect(validateTime('09:30:45')).toEqual({ isValid: true })
+    expect(validateTime('00:00:00')).toEqual({ isValid: true })
+    expect(validateTime('23:59:59')).toEqual({ isValid: true })
+  })
+
+  it('still rejects out-of-range hours, minutes and seconds', () => {
+    expect(validateTime('24:00')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('24:00:00')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:60')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:60:00')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:00:60')).toEqual({ isValid: false, error: expect.any(String) })
+  })
+
+  it('still rejects malformed seconds', () => {
+    expect(validateTime('20:00:')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:00:5')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:00:000')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:00:00:00')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTime('20:00:ab')).toEqual({ isValid: false, error: expect.any(String) })
+  })
 })
 
 describe('validateTimeRange', () => {
@@ -109,6 +132,13 @@ describe('validateTimeRange', () => {
 
   it('accepts end time after start time', () => {
     expect(validateTimeRange('09:00', '10:00')).toEqual({ isValid: true })
+  })
+
+  it('works with times that include seconds, alone or mixed with HH:mm', () => {
+    expect(validateTimeRange('20:00:00', '22:00:00')).toEqual({ isValid: true })
+    expect(validateTimeRange('20:00', '22:00:00')).toEqual({ isValid: true })
+    expect(validateTimeRange('20:00:00', '20:00:00')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTimeRange('22:00:00', '20:00')).toEqual({ isValid: false, error: expect.any(String) })
   })
 })
 

@@ -75,11 +75,11 @@ export const validateDate = (date: string): { isValid: boolean; error?: string }
     return { isValid: true };
 };
 
-// Validar hora (formato HH:mm)
+// Validar hora (formato HH:mm o HH:mm:ss; el backend devuelve las horas con segundos)
 export const validateTime = (time: string): { isValid: boolean; error?: string } => {
     if (!time) return { isValid: true }; // Opcional
 
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/;
 
     if (!timeRegex.test(time)) {
         return { isValid: false, error: 'Formato de hora inválido (HH:mm)' };
