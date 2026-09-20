@@ -45,7 +45,7 @@ La industria recomienda distribuir los esfuerzos en forma de pirámide: muchas p
   /────────────────\
 ```
 
-En este proyecto la distribución real es de 229 pruebas unitarias y de componentes, 33 de integración y 49 E2E (sección 7).
+En este proyecto la distribución real es de 249 pruebas unitarias y de componentes, 33 de integración y 58 E2E (sección 7).
 
 Una precisión de vocabulario: en este informe, las pruebas de la sección 3 que combinan varios módulos con dependencias simuladas (por ejemplo `AuthProvider` con `authService` mockeado) se etiquetan como "integración" por su alcance, pero se ejecutan con el resto de las pruebas unitarias. Las **pruebas de integración contra el backend real** son las de la sección 4.
 
@@ -87,13 +87,13 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 | `context/AuthProvider.test.tsx` | 9 | ✓ Todos pasando |
 | `events/hooks/useEvents.test.ts` | 7 | ✓ Todos pasando |
 | `events/components/EventCard.test.tsx` | 8 | ✓ Todos pasando |
-| `events/utils/filterEvents.test.ts` | 47 | ✓ Todos pasando |
+| `events/utils/filterEvents.test.ts` | 67 | ✓ Todos pasando |
 | `events/components/EventFilters.test.tsx` | 33 | ✓ Todos pasando |
 | `events/components/ComunaCombobox.test.tsx` | 17 | ✓ Todos pasando |
 | `events/utils/nearestComuna.test.ts` | 32 | ✓ Todos pasando |
 | `events/utils/comunaSearch.test.ts` | 9 | ✓ Todos pasando |
 | `events/components/map/MapView.test.tsx` | 12 | ✓ Todos pasando |
-| **Total** | **229** | **229 ✓ / 0 ✗** |
+| **Total** | **249** | **249 ✓ / 0 ✗** |
 
 (Rutas relativas a `src/features/` salvo `services/`, `hooks/`, `router/` y `context/`, que cuelgan directamente de `src/`.)
 
@@ -271,13 +271,18 @@ Componente de visualización de eventos con interacciones de navegación y accio
 
 `filterEvents` aplica los filtros de la pantalla de eventos sobre la lista que devuelve el backend (el filtrado se hace por completo en el cliente). Los filtros son combinables con lógica AND. Las fechas `yyyy-MM-dd` se comparan como texto, sin construir objetos `Date`, para evitar el corrimiento de día que produce interpretar la fecha en UTC.
 
+El filtro de ubicación distingue dos casos. Si el valor es una **comuna conocida** (elegida en el combo o con "Cerca de mí"), exige que un segmento de la dirección, separado por comas, sea exactamente esa comuna (sin distinguir tildes ni mayúsculas); así "Concepción" no trae una dirección de Talcahuano por su "Provincia de Concepción", ni "Santiago" una de otra comuna por su "Región Metropolitana de Santiago". Si el valor **no es una comuna** (texto libre), busca como subcadena de toda la dirección.
+
 | Módulo | Casos probados | Tests |
 |---|---|---|
 | `normalizeText` | Minúsculas, sin tildes, recorte de espacios | 1 |
 | `haversineKm` | Puntos idénticos, un grado de latitud, distancia conocida Santiago–Valparaíso, simetría | 4 |
 | Sin filtros | Criterios vacíos, lista vacía, texto solo con espacios | 3 |
 | Texto | Coincidencia en título, descripción y ubicación; sin distinguir mayúsculas ni tildes; sin resultados | 6 |
-| Ubicación | Solo el campo `location`; sin distinguir mayúsculas ni tildes | 3 |
+| Ubicación (campo `location`) | Solo ese campo; sin distinguir mayúsculas ni tildes | 3 |
+| Ubicación: comuna exacta | Concepción no trae Talcahuano ni San Pedro de la Paz (misma provincia); Santiago no trae Providencia; Valparaíso no trae Viña del Mar; tildes, mayúsculas y espacios; comunas de varias palabras; una comuna prefijo de otra (Chillán y Chillán Viejo); direcciones con calle, barrio y código postal; dirección que es solo la comuna; comuna dentro de otro segmento ("Municipalidad de Concepción"); nombre que solo aparece como provincia (Arauco); evento sin dirección | 12 |
+| Ubicación: texto libre | Sigue buscando por subcadena ("Provincia de Concepción", "Biobío", "Región Metropolitana", un texto parcial, una calle o un lugar, sin distinguir tildes) | 5 |
+| Ubicación: el resto no cambia | El texto ("Buscar") sigue buscando en toda la dirección; la comuna exacta se combina con AND con texto, fecha y cercanía; no muta el arreglo original | 3 |
 | Fecha | Solo desde, solo hasta, rango, límites inclusivos, un día fuera del rango, desde posterior a hasta, fecha malformada, comparación como fecha local | 8 |
 | `getDatePresetRange` | "Hoy", "Próximos", "Esta semana" (lunes a domingo, en lunes, en domingo, cruce de mes y de año) | 7 |
 | Cercanía (radio en km) | Dentro del radio, sin coordenadas, coordenadas incompletas o no finitas, límite exacto | 5 |
@@ -285,9 +290,9 @@ Componente de visualización de eventos con interacciones de navegación y accio
 | Inmutabilidad | No modifica el arreglo ni los eventos originales, devuelve un arreglo nuevo, conserva el orden | 3 |
 | `hasActiveFilters` | Sin filtros y con cada filtro activo | 2 |
 
-**Tests:** 47 | **Resultado:** 47 ✓
+**Tests:** 67 (47 anteriores, de los cuales 1 se ajustó por el nuevo comportamiento, y 20 nuevos) | **Resultado:** 67 ✓
 
-Notas: el filtro por radio en km se conserva en la función y en sus pruebas, pero la interfaz ya no lo usa (se reemplazó por la elección de la comuna más cercana, secciones 3.10 y 3.11). Las pruebas de fechas se verificaron además, de forma manual y fuera de la suite, con distintas zonas horarias (`TZ`).
+Notas: el test "filters by city on the location field only" cambió su resultado esperado de `[2, 4]` a `[2]`: la dirección "Santiago (virtual)" ya no coincide con la comuna Santiago, porque ningún segmento suyo es exactamente "Santiago". Se comprobó que 10 de los tests de ubicación fallan con la implementación anterior. El filtro por radio en km se conserva en la función y en sus pruebas, pero la interfaz ya no lo usa (se reemplazó por la elección de la comuna más cercana, secciones 3.10 y 3.11). Las pruebas de fechas se verificaron además, de forma manual y fuera de la suite, con distintas zonas horarias (`TZ`).
 
 ---
 
@@ -409,7 +414,7 @@ A diferencia de las pruebas de la sección 3, estas no usan mocks: `authService`
 
 ## 5. Pruebas E2E con Playwright
 
-**Archivos:** `e2e/*.e2e.ts` (5 archivos)
+**Archivos:** `e2e/*.e2e.ts` (6 archivos)
 **Comando:** `npm run test:e2e`
 
 Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida por Vite) contra el backend real.
@@ -432,9 +437,9 @@ Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida 
 | CRUD de eventos (validación, crear, editar, eliminar) | `events-crud.e2e.ts` | 9 |
 | Mapa (popup del marcador) | `events-crud.e2e.ts` | 1 |
 | Detalle de un evento | `event-details.e2e.ts` | 8 |
-| Filtros | `events-filters.e2e.ts` | 19 |
+| Filtros | `events-filters.e2e.ts` (19) y `events-location-filter.e2e.ts` (9) | 28 |
 | Accesibilidad (etiquetas del formulario) | `events-crud.e2e.ts` | 2 |
-| **Total** | **5 archivos** | **49** |
+| **Total** | **6 archivos** | **58** |
 
 ### 5.2 Autenticación y sesión (10 tests)
 
@@ -463,9 +468,9 @@ Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida 
 - Un id que no existe no muestra ningún evento y permite volver.
 - La ruta nueva no captura a las demás rutas de `/events`: `/events/create` sigue abriendo el formulario de creación y `/events/edit/<id>` el de edición.
 
-### 5.6 Filtros (19 tests)
+### 5.6 Filtros (28 tests)
 
-Con 3 eventos sembrados por API, en tres comunas distintas y con fechas de 2031, cada prueba comprueba qué eventos propios aparecen o desaparecen de la lista y del mapa.
+**`events-filters.e2e.ts` (19 tests).** Con 3 eventos sembrados por API, en tres comunas distintas y con fechas de 2031, cada prueba comprueba qué eventos propios aparecen o desaparecen de la lista y del mapa.
 
 - **Texto (5):** el token único deja solo los 3 eventos; filtra por título sin distinguir mayúsculas, por descripción y por la ubicación; sin coincidencias avisa y mantiene visible la barra de filtros.
 - **Comuna (3):** escribir el nombre de una comuna deja solo el evento de esa comuna; el combo sugiere comunas sin distinguir tildes y al elegir una filtra; acepta texto libre que no es una comuna.
@@ -473,24 +478,33 @@ Con 3 eventos sembrados por API, en tres comunas distintas y con fechas de 2031,
 - **Combinados y limpieza (2):** los filtros se combinan con AND; "Limpiar filtros" restablece los campos y devuelve los eventos propios a la lista y al mapa.
 - **"Cerca de mí" (4):** con la geolocalización en Concepción selecciona esa comuna y filtra por ella; si la ubicación cambia, elige otra comuna; fuera de Chile avisa y no cambia el filtro; sin permiso de ubicación muestra el mensaje de permiso denegado.
 
+**`events-location-filter.e2e.ts` (9 tests).** Con 2 eventos sembrados en comunas distintas que comparten la misma "Provincia de Concepción" y la misma región (uno en Concepción y otro en Talcahuano), comprueba que el filtro por comuna compara la comuna exacta:
+
+- **Comuna exacta (5):** "Concepción" deja solo el evento de Concepción y no el de Talcahuano; "Talcahuano" deja solo el de Talcahuano; elegir la comuna en la lista del combo aplica la misma regla; sin distinguir mayúsculas ni tildes; cambiar de una comuna a la otra cambia el resultado.
+- **Texto libre (2):** "Provincia de Concepción" y "Biobío", que no son comunas, siguen buscando por subcadena y traen ambos eventos.
+- **Resto sin cambios (1):** el buscador de texto sigue buscando en toda la dirección.
+- **"Cerca de mí" (1):** con la ubicación en Concepción selecciona esa comuna y trae solo su evento.
+
+Se comprobó que 5 de estos tests fallan con la implementación anterior.
+
 ### 5.7 Accesibilidad (2 tests)
 
 - Cada campo del formulario de creación se encuentra y se puede llenar por su etiqueta (título, descripción, fecha, hora de inicio y hora de fin).
 - El formulario de edición también asocia sus etiquetas.
 
-**Resultado:** 49 tests (48 pasan + 1 `test.fail`), 5 archivos. Se ejecutó la suite completa 3 veces seguidas, sin inestabilidad:
+**Resultado:** 58 tests (57 pasan + 1 `test.fail`), 6 archivos. Se ejecutó la suite completa 3 veces seguidas, sin inestabilidad:
 
 | Corrida | Resultado | Duración |
 |---|---|---|
-| 1 | 49 passed | 48,5 s |
-| 2 | 49 passed | 49,6 s |
-| 3 | 49 passed | 50,1 s |
+| 1 | 58 passed | 57,3 s |
+| 2 | 58 passed | 58,4 s |
+| 3 | 58 passed | 59,0 s |
 
 ---
 
 ## 6. Hallazgos
 
-Las pruebas E2E y de integración detectaron defectos reales, en el frontend y en el backend. Los del frontend se corrigieron; los del backend no son parte del alcance de esta memoria y quedan documentados, con sus pruebas marcadas como defecto conocido.
+Las pruebas E2E y de integración, junto con revisiones manuales, detectaron defectos reales, en el frontend y en el backend. Los del frontend se corrigieron; los del backend no son parte del alcance de esta memoria y quedan documentados, con sus pruebas marcadas como defecto conocido.
 
 ### 6.1 Defectos del frontend detectados y corregidos
 
@@ -500,6 +514,7 @@ Las pruebas E2E y de integración detectaron defectos reales, en el frontend y e
 | 2 | **El primer clic en "Crear Evento" se perdía.** Al hacer clic estando en "Hora Fin", el campo perdía el foco, aparecía su error de validación y el botón se desplazaba unos 23 px antes de soltar el clic; el evento `submit` nunca se disparaba y había que hacer clic dos veces. | E2E: "datos inválidos muestran los errores de la app y no envían ninguna petición POST" (se midió el desplazamiento del botón) | `88a8a1d` — los mensajes de título, descripción, fecha y rango de horas reservan siempre su línea, de modo que el layout no salta. La validación al salir del campo se mantiene |
 | 3 | **La ruta de detalle de evento no estaba registrada.** `ROUTES.EVENT_DETAILS` existía pero `AppRouter` no la registraba: `EventDetailsPage` era inalcanzable y "Ver Detalles" y la tarjeta terminaban redirigiendo a `/events`. | Lectura del código al preparar los E2E; el E2E de detalle falla si se quita la ruta | `df1d087` — ruta registrada como protegida; 8 E2E nuevos |
 | 4 | **Los `label` del formulario de evento no estaban asociados a sus campos** (sin `htmlFor` ni `id`), por lo que no se podían encontrar por etiqueta ni los lectores de pantalla los leían al enfocar el campo. | Lectura del código al escribir los E2E (no se podía usar `getByLabel`); los 2 E2E nuevos fallan sin el cambio | `59e699e` — `htmlFor` e `id` (con `useId`) sin cambiar estilos ni comportamiento; 2 E2E nuevos |
+| 5 | **El filtro por comuna traía eventos de otras comunas.** Las direcciones son "lugar, comuna, Provincia de X, Región de Y, …, Chile" y el filtro buscaba el valor como subcadena de toda la dirección: "Concepción" traía también las de Talcahuano por su "Provincia de Concepción", y "Santiago" las de otras comunas por su región. En una medición manual con una base de 72 eventos de prueba, "Santiago" devolvió 26 eventos frente a 11 realmente ubicados en esa comuna, "Concepción" 24 frente a 18 y "Valparaíso" 22 frente a 12. | Prueba manual con datos sembrados, contrastando el resultado con la comuna real de cada evento | `7df7132` — si el valor es una comuna conocida se exige que un segmento de la dirección (separado por comas) sea exactamente esa comuna; el texto libre sigue buscando por subcadena. 20 tests unitarios nuevos, 1 test existente ajustado y 9 E2E |
 
 ### 6.2 Defectos conocidos del backend, sin corregir
 
@@ -515,7 +530,7 @@ Se verificaron con `curl` y con las pruebas de integración o E2E. No se modific
 
 No están corregidas y no tienen prueba que las cubra (salvo indicación):
 
-- **El filtro por comuna busca el nombre como subcadena de la dirección completa.** Las comunas que comparten nombre con su provincia o región devuelven más eventos de los que corresponden. En una medición manual con una base de 72 eventos de prueba, "Santiago" devolvió 26 eventos frente a 11 realmente ubicados en esa comuna, "Concepción" 24 frente a 18 y "Valparaíso" 22 frente a 12. Las pruebas E2E de filtros usan comunas sin ese problema.
+- **La regla del filtro por comuna tiene dos efectos laterales.** (1) Un texto que coincide exactamente con una comuna conocida se trata como esa comuna aunque se esté escribiendo el nombre de otra más larga: al escribir "San Pedro" (comuna de la Región Metropolitana) el filtro devuelve 0 eventos de San Pedro de la Paz, mientras que "San Pedro de" (texto libre) y el nombre completo sí los devuelven. Se comprobó con una prueba puntual y no tiene test en la suite. (2) Una dirección que no trae la comuna como segmento propio (por ejemplo "Santiago (virtual)" o "Municipalidad de Concepción, …") no coincide con el filtro de esa comuna; este caso sí tiene test unitario.
 - **`LocationPicker` no usa la prop `location`** (detectado leyendo el código): el campo de búsqueda de dirección arranca vacío al editar un evento.
 - **`EventMarker` recibe `onClick` pero no lo invoca** (detectado leyendo el código); la navegación se hace con el botón "Ver Detalles" del popup.
 - **`/events/edit` sin id** coincide con `/events/:id` y muestra el estado de error de la página de detalle (detectado leyendo el código).
@@ -527,16 +542,16 @@ No están corregidas y no tienen prueba que las cubra (salvo indicación):
 
 | Tipo de prueba | Comando | Archivos | Tests | Resultado |
 |---|---|---|---|---|
-| Unitarias y de componentes | `npm test` | 15 | 229 | 229 pasan |
+| Unitarias y de componentes | `npm test` | 15 | 249 | 249 pasan |
 | Integración contra el backend | `npm run test:integration` | 2 | 33 | 30 pasan + 3 `expected fail` |
-| E2E (Chromium) | `npm run test:e2e` | 5 | 49 | 48 pasan + 1 `test.fail` |
-| **Total** | | **22** | **311** | **307 pasan + 4 fallos esperados (defectos conocidos del backend)** |
+| E2E (Chromium) | `npm run test:e2e` | 6 | 58 | 57 pasan + 1 `test.fail` |
+| **Total** | | **23** | **340** | **336 pasan + 4 fallos esperados (defectos conocidos del backend)** |
 
 Salida de `npm test -- --run`:
 
 ```
  Test Files  15 passed (15)
-      Tests  229 passed (229)
+      Tests  249 passed (249)
    Duration  ~5 s
 ```
 
@@ -550,9 +565,9 @@ Salida de `npm run test:integration`:
 Salida de `npm run test:e2e` (la línea marcada con ✘ es el `test.fail()` esperado):
 
 ```
-Running 49 tests using 1 worker
+Running 58 tests using 1 worker
   ✘   7 [chromium] › auth.e2e.ts › Sesión › un token inválido en localStorage redirige a /login ... [defecto conocido del backend: el 401 no trae cabeceras CORS]
-  49 passed
+  58 passed
 ```
 
 Los 4 "fallos esperados" corresponden a los defectos del backend de la sección 6.2 (3 pruebas de integración con `it.fails` y 1 E2E con `test.fail()`); cada una avisará cuando el backend se corrija.
@@ -577,8 +592,8 @@ Estado de la calidad estática: `npm run build` termina sin errores (se corrigie
 
 ## 9. Conclusión
 
-La suite tiene tres niveles. Las 229 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación, los hooks, los componentes de la interfaz, el filtrado y el componente del mapa, y se ejecutan en unos 5 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 49 pruebas E2E recorren los flujos principales en un navegador real: autenticación, creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
+La suite tiene tres niveles. Las 249 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación, los hooks, los componentes de la interfaz, el filtrado y el componente del mapa, y se ejecutan en unos 5 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 58 pruebas E2E recorren los flujos principales en un navegador real: autenticación, creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
 
-Las pruebas de integración y E2E encontraron cuatro defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
+Las pruebas de integración y E2E, junto con revisiones manuales, encontraron cinco defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
 
 Las limitaciones de la sección 8 delimitan lo que estas pruebas garantizan: se ejecutan solo en Chromium, a mano y con el backend levantado. Los siguientes pasos naturales serían automatizar la ejecución en integración continua y resolver las observaciones pendientes de la sección 6.3.
