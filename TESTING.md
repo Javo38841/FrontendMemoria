@@ -45,7 +45,7 @@ La industria recomienda distribuir los esfuerzos en forma de pirámide: muchas p
   /────────────────\
 ```
 
-En este proyecto la distribución real es de 249 pruebas unitarias y de componentes, 33 de integración y 58 E2E (sección 7).
+En este proyecto la distribución real es de 265 pruebas unitarias y de componentes, 33 de integración y 63 E2E (sección 7).
 
 Una precisión de vocabulario: en este informe, las pruebas de la sección 3 que combinan varios módulos con dependencias simuladas (por ejemplo `AuthProvider` con `authService` mockeado) se etiquetan como "integración" por su alcance, pero se ejecutan con el resto de las pruebas unitarias. Las **pruebas de integración contra el backend real** son las de la sección 4.
 
@@ -78,7 +78,7 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 
 | Archivo de prueba | Tests | Estado |
 |---|---|---|
-| `events/utils/validators.test.ts` | 28 | ✓ Todos pasando |
+| `events/utils/validators.test.ts` | 34 | ✓ Todos pasando |
 | `services/storage.service.test.ts` | 7 | ✓ Todos pasando |
 | `hooks/useLocalStorage.test.ts` | 7 | ✓ Todos pasando |
 | `router/ProtectedRoute.test.tsx` | 3 | ✓ Todos pasando |
@@ -90,10 +90,11 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 | `events/utils/filterEvents.test.ts` | 67 | ✓ Todos pasando |
 | `events/components/EventFilters.test.tsx` | 33 | ✓ Todos pasando |
 | `events/components/ComunaCombobox.test.tsx` | 17 | ✓ Todos pasando |
+| `events/components/EventForm.test.tsx` | 10 | ✓ Todos pasando |
 | `events/utils/nearestComuna.test.ts` | 32 | ✓ Todos pasando |
 | `events/utils/comunaSearch.test.ts` | 9 | ✓ Todos pasando |
 | `events/components/map/MapView.test.tsx` | 12 | ✓ Todos pasando |
-| **Total** | **249** | **249 ✓ / 0 ✗** |
+| **Total** | **265** | **265 ✓ / 0 ✗** |
 
 (Rutas relativas a `src/features/` salvo `services/`, `hooks/`, `router/` y `context/`, que cuelgan directamente de `src/`.)
 
@@ -104,18 +105,19 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 
 Los validadores son funciones puras sin dependencias externas, lo que los convierte en el candidato ideal para pruebas unitarias directas. Se verificó cada función con casos de borde, valores límite y entradas inválidas.
 
+Los validadores de texto (`validateTitle`, `validateDescription` y `validateLocation`) miden el largo del texto tal como lo escribió el usuario: con `trim` y sin codificar, de modo que cada símbolo cuenta como un carácter y el largo coincide con el contador y con el `maxLength` de los campos. No se codifica el texto en HTML porque React ya escapa lo que renderiza. La función `sanitizeText`, que hacía esa codificación, se eliminó (ver el defecto 6 de la sección 6.1).
+
 | Función | Casos probados |
 |---|---|
-| `sanitizeText` | Trim de espacios, escape de `<>`, escape de comillas y barras |
-| `validateTitle` | Rechazo por longitud < 3, rechazo por longitud > 100, aceptación válida |
-| `validateDescription` | Rechazo por longitud < 10, rechazo por longitud > 500, aceptación válida |
-| `validateLocation` | Rechazo por longitud < 3, rechazo por longitud > 200, aceptación válida |
+| `validateTitle` | Rechazo por longitud < 3, rechazo por longitud > 100, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (100 barras son válidas, 101 no) y acepta apóstrofes, barras, comillas y `<` `>`** |
+| `validateDescription` | Rechazo por longitud < 10, rechazo por longitud > 500, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (500 barras son válidas, 501 apóstrofes no) y acepta comillas, apóstrofes, barras y etiquetas escritas como texto** |
+| `validateLocation` | Rechazo por longitud < 3, rechazo por longitud > 200, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (200 apóstrofes son válidos, 201 no) y acepta direcciones con apóstrofes y barras** |
 | `validateDate` | Rechazo de fecha vacía, rechazo de fecha pasada, aceptación de fecha futura |
 | `validateTime` | Campo opcional vacío, formato inválido, formato válido, **segundos opcionales (`HH:mm:ss`)**, rechazo de `24:00`, `20:60` y `20:00:60`, rechazo de segundos mal formados |
 | `validateTimeRange` | Hora de fin igual a inicio, hora de fin anterior, rango válido, **rango con segundos (solos o mezclados con `HH:mm`)** |
 | `validateCoordinates` | Latitud fuera de rango, longitud fuera de rango, coordenadas válidas |
 
-**Tests:** 28 (24 originales + 4 agregados al corregir el defecto 1 de la sección 6.1: 3 de `validateTime` y 1 de `validateTimeRange`) | **Resultado:** 28 ✓
+**Tests:** 34 (24 originales, de los cuales se eliminaron los 3 de `sanitizeText`; más 4 agregados al corregir el defecto 1 de la sección 6.1, 3 de `validateTime` y 1 de `validateTimeRange`; y 9 agregados al corregir el defecto 6, 3 por cada validador de texto) | **Resultado:** 34 ✓
 
 ---
 
@@ -372,6 +374,24 @@ Lo que estas pruebas no cubren es el render visual: los tiles del mapa, los íco
 
 ---
 
+### 3.14 Formulario de evento (EventForm)
+
+**Archivo:** `src/features/events/components/EventForm.test.tsx`
+**Tipo:** Componente (React Testing Library + user-event), con el `LocationPicker` reemplazado por un botón que entrega una ubicación válida
+
+Estas pruebas escriben con `userEvent.type`, que teclea tecla por tecla como un usuario. Es relevante porque `fireEvent.change` (y el `fill()` de Playwright) ponen el valor completo de una vez y no pasan por cada pulsación, que es donde el formulario corrompía el texto (defecto 6 de la sección 6.1).
+
+| Módulo | Casos probados | Tests |
+|---|---|---|
+| Escribir con el teclado | Conserva los espacios entre palabras en el título y en la descripción; conserva el apóstrofe y la barra (`Rock's AC/DC`); conserva comillas y los signos `<` y `>`; conserva los espacios de los bordes mientras se escribe (el recorte es al enviar); el contador de caracteres cuenta lo tecleado | 6 |
+| Lo que llega a `onSubmit` | Título y descripción idénticos a lo tecleado (con espacios, guion, apóstrofe, barra, comillas, `&` y etiquetas escritas como texto); recorte de los espacios de los bordes solo al enviar; un título de 100 símbolos es válido (el largo cuenta lo tecleado); no envía si al recortar el título quedan menos de 3 caracteres | 4 |
+
+**Tests:** 10 | **Resultado:** 10 ✓
+
+Con el código anterior al arreglo, 9 de estos 10 tests fallaban (el campo mostraba `Nochedejazz` en lugar de `Noche de jazz` y `Rock&#x27;sAC&#x2F;DC` en lugar de `Rock's AC/DC`); el que pasaba era el de "no envía si al recortar el título quedan menos de 3 caracteres".
+
+---
+
 ## 4. Pruebas de integración contra el backend real
 
 **Archivos:** `tests/integration/auth.integration.test.ts` y `tests/integration/events.integration.test.ts`
@@ -414,7 +434,7 @@ A diferencia de las pruebas de la sección 3, estas no usan mocks: `authService`
 
 ## 5. Pruebas E2E con Playwright
 
-**Archivos:** `e2e/*.e2e.ts` (6 archivos)
+**Archivos:** `e2e/*.e2e.ts` (7 archivos)
 **Comando:** `npm run test:e2e`
 
 Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida por Vite) contra el backend real.
@@ -439,7 +459,8 @@ Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida 
 | Detalle de un evento | `event-details.e2e.ts` | 8 |
 | Filtros | `events-filters.e2e.ts` (19) y `events-location-filter.e2e.ts` (9) | 28 |
 | Accesibilidad (etiquetas del formulario) | `events-crud.e2e.ts` | 2 |
-| **Total** | **6 archivos** | **58** |
+| Escritura con el teclado (`pressSequentially`) | `events-typing.e2e.ts` | 5 |
+| **Total** | **7 archivos** | **63** |
 
 ### 5.2 Autenticación y sesión (10 tests)
 
@@ -455,6 +476,8 @@ Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida 
 - **Crear:** se crea un evento eligiendo la ubicación con un clic en el mapa. Se comprueba que el formulario envía las coordenadas del clic (no las iniciales) y que la dirección se pidió con esas mismas coordenadas, que la aplicación avisa y lleva a "Mis eventos", que el evento quedó guardado en el backend y que en `/events` aparece como tarjeta y como marcador.
 - **Editar:** un evento sin horas se edita y el cambio se ve en "Mis eventos" y en el backend; un evento con horas se edita sin tener que reescribirlas.
 - **Eliminar:** cancelar la confirmación no elimina el evento; confirmar lo elimina de la lista y del backend (se comprueban ambos diálogos, el `confirm` y el `alert` de éxito).
+
+Estas pruebas llenan los campos con `fill()`, que inserta el valor completo de una vez; la escritura tecla por tecla se prueba en la sección 5.8.
 
 ### 5.4 Mapa (1 test)
 
@@ -492,13 +515,27 @@ Se comprobó que 5 de estos tests fallan con la implementación anterior.
 - Cada campo del formulario de creación se encuentra y se puede llenar por su etiqueta (título, descripción, fecha, hora de inicio y hora de fin).
 - El formulario de edición también asocia sus etiquetas.
 
-**Resultado:** 58 tests (57 pasan + 1 `test.fail`), 6 archivos. Se ejecutó la suite completa 3 veces seguidas, sin inestabilidad:
+### 5.8 Escritura con el teclado (5 tests)
+
+Estas pruebas (`events-typing.e2e.ts`) teclean con `pressSequentially`, tecla por tecla, en vez de `fill()`, que inserta el valor completo de una vez y no reproduce lo que ocurre en cada pulsación. Usan un título con espacios, guion, apóstrofe y barra (`Noche de jazz - Rock's AC/DC`) y una descripción con comillas, apóstrofe, barra, `&` y etiquetas HTML escritas como texto.
+
+- El título y la descripción tecleados se conservan tal cual en el campo, y los contadores de caracteres cuentan lo tecleado.
+- Al crear el evento, el backend guarda título y descripción idénticos a lo tecleado (sin entidades HTML), la tarjeta los muestra bien y `<b>negrita</b>` no se interpreta como HTML (React escapa el texto).
+- El popup del marcador y la pantalla de detalle también lo muestran bien (con un evento creado por API).
+- Los espacios al inicio y al final se conservan mientras se escribe y se recortan solo al enviar.
+- En la edición, el formulario precarga el texto tal cual y, al seguir tecleando, no se codifica.
+
+Con el código anterior al arreglo fallan 4 de estos 5 tests; el del popup y el detalle no depende del formulario y pasa en ambos casos.
+
+**Resultado:** 63 tests (62 pasan + 1 `test.fail`), 7 archivos. Se ejecutó la suite completa 3 veces seguidas; las tres corridas terminaron con todos los tests pasando (código de salida 0) y sin tests intermitentes:
 
 | Corrida | Resultado | Duración |
 |---|---|---|
-| 1 | 58 passed | 57,3 s |
-| 2 | 58 passed | 58,4 s |
-| 3 | 58 passed | 59,0 s |
+| 1 | 63 passed | 1,1 min |
+| 2 | 63 passed | 1,2 min |
+| 3 | 63 passed | 1,2 min |
+
+(Playwright informa las duraciones de más de un minuto en minutos, con un decimal.)
 
 ---
 
@@ -515,6 +552,7 @@ Las pruebas E2E y de integración, junto con revisiones manuales, detectaron def
 | 3 | **La ruta de detalle de evento no estaba registrada.** `ROUTES.EVENT_DETAILS` existía pero `AppRouter` no la registraba: `EventDetailsPage` era inalcanzable y "Ver Detalles" y la tarjeta terminaban redirigiendo a `/events`. | Lectura del código al preparar los E2E; el E2E de detalle falla si se quita la ruta | `df1d087` — ruta registrada como protegida; 8 E2E nuevos |
 | 4 | **Los `label` del formulario de evento no estaban asociados a sus campos** (sin `htmlFor` ni `id`), por lo que no se podían encontrar por etiqueta ni los lectores de pantalla los leían al enfocar el campo. | Lectura del código al escribir los E2E (no se podía usar `getByLabel`); los 2 E2E nuevos fallan sin el cambio | `59e699e` — `htmlFor` e `id` (con `useId`) sin cambiar estilos ni comportamiento; 2 E2E nuevos |
 | 5 | **El filtro por comuna traía eventos de otras comunas.** Las direcciones son "lugar, comuna, Provincia de X, Región de Y, …, Chile" y el filtro buscaba el valor como subcadena de toda la dirección: "Concepción" traía también las de Talcahuano por su "Provincia de Concepción", y "Santiago" las de otras comunas por su región. En una medición manual con una base de 72 eventos de prueba, "Santiago" devolvió 26 eventos frente a 11 realmente ubicados en esa comuna, "Concepción" 24 frente a 18 y "Valparaíso" 22 frente a 12. | Prueba manual con datos sembrados, contrastando el resultado con la comuna real de cada evento | `7df7132` — si el valor es una comuna conocida se exige que un segmento de la dirección (separado por comas) sea exactamente esa comuna; el texto libre sigue buscando por subcadena. 20 tests unitarios nuevos, 1 test existente ajustado y 9 E2E |
+| 6 | **Escribir con el teclado corrompía el texto.** `handleChange` aplicaba `sanitizeText` en cada pulsación, que recortaba (`trim`) y codificaba `<`, `>`, `"`, `'` y `/` como entidades HTML: los espacios se perdían mientras se escribía (`Noche de jazz` quedaba `Nochedejazz`) y los símbolos se guardaban como entidades (`Rock's AC/DC` quedaba `Rock&#x27;sAC&#x2F;DC`). Además, los validadores medían el texto ya codificado, de modo que los símbolos contaban de más, y el contador de caracteres mostraba un valor mayor (21/100 para un título de 12 caracteres). React ya escapa el texto al renderizar (no hay `dangerouslySetInnerHTML` en `src`), por lo que codificar la entrada corrompía los datos sin agregar protección. | Al probar con escritura real (`userEvent.type`). **Los E2E iniciales no lo detectaron porque llenaban los campos con `fill()`, que inserta el valor completo de una vez y no pasa por cada pulsación.** En el backend de pruebas no había datos ya codificados | `a1e2daa` (tests que lo reproducen: 9 de 10 fallaban), `a9a6d0f` (arreglo: `handleChange` guarda el valor tal cual, los validadores miden con `trim` sin codificar y el recorte se aplica al enviar; `sanitizeText` se elimina) y `741a630` (5 E2E con `pressSequentially`; 4 fallan con el código anterior) |
 
 ### 6.2 Defectos conocidos del backend, sin corregir
 
@@ -542,17 +580,17 @@ No están corregidas y no tienen prueba que las cubra (salvo indicación):
 
 | Tipo de prueba | Comando | Archivos | Tests | Resultado |
 |---|---|---|---|---|
-| Unitarias y de componentes | `npm test` | 15 | 249 | 249 pasan |
+| Unitarias y de componentes | `npm test` | 16 | 265 | 265 pasan |
 | Integración contra el backend | `npm run test:integration` | 2 | 33 | 30 pasan + 3 `expected fail` |
-| E2E (Chromium) | `npm run test:e2e` | 6 | 58 | 57 pasan + 1 `test.fail` |
-| **Total** | | **23** | **340** | **336 pasan + 4 fallos esperados (defectos conocidos del backend)** |
+| E2E (Chromium) | `npm run test:e2e` | 7 | 63 | 62 pasan + 1 `test.fail` |
+| **Total** | | **25** | **361** | **357 pasan + 4 fallos esperados (defectos conocidos del backend)** |
 
 Salida de `npm test -- --run`:
 
 ```
- Test Files  15 passed (15)
-      Tests  249 passed (249)
-   Duration  ~5 s
+ Test Files  16 passed (16)
+      Tests  265 passed (265)
+   Duration  ~6 s
 ```
 
 Salida de `npm run test:integration`:
@@ -565,9 +603,9 @@ Salida de `npm run test:integration`:
 Salida de `npm run test:e2e` (la línea marcada con ✘ es el `test.fail()` esperado):
 
 ```
-Running 58 tests using 1 worker
+Running 63 tests using 1 worker
   ✘   7 [chromium] › auth.e2e.ts › Sesión › un token inválido en localStorage redirige a /login ... [defecto conocido del backend: el 401 no trae cabeceras CORS]
-  58 passed
+  63 passed
 ```
 
 Los 4 "fallos esperados" corresponden a los defectos del backend de la sección 6.2 (3 pruebas de integración con `it.fails` y 1 E2E con `test.fail()`); cada una avisará cuando el backend se corrija.
@@ -592,8 +630,8 @@ Estado de la calidad estática: `npm run build` termina sin errores (se corrigie
 
 ## 9. Conclusión
 
-La suite tiene tres niveles. Las 249 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación, los hooks, los componentes de la interfaz, el filtrado y el componente del mapa, y se ejecutan en unos 5 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 58 pruebas E2E recorren los flujos principales en un navegador real: autenticación, creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
+La suite tiene tres niveles. Las 265 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación, los hooks, los componentes de la interfaz (incluido el formulario de evento), el filtrado y el componente del mapa, y se ejecutan en unos 6 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 63 pruebas E2E recorren los flujos principales en un navegador real: autenticación, creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
 
-Las pruebas de integración y E2E, junto con revisiones manuales, encontraron cinco defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
+Las pruebas de integración y E2E, junto con revisiones manuales, encontraron seis defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
 
 Las limitaciones de la sección 8 delimitan lo que estas pruebas garantizan: se ejecutan solo en Chromium, a mano y con el backend levantado. Los siguientes pasos naturales serían automatizar la ejecución en integración continua y resolver las observaciones pendientes de la sección 6.3.
