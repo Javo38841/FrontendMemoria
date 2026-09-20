@@ -30,3 +30,8 @@ claude-desktop*.deb
 # Playwright
 playwright-report/
 test-results/
+
+# Variables de entorno (.env.example sí se versiona)
+.env
+.env.local
+.env.*.local
