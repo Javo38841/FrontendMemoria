@@ -45,7 +45,7 @@ La industria recomienda distribuir los esfuerzos en forma de pirámide: muchas p
   /────────────────\
 ```
 
-En este proyecto la distribución real es de 265 pruebas unitarias y de componentes, 33 de integración y 63 E2E (sección 7).
+En este proyecto la distribución real es de 273 pruebas unitarias y de componentes, 33 de integración y 68 E2E (sección 7).
 
 Una precisión de vocabulario: en este informe, las pruebas de la sección 3 que combinan varios módulos con dependencias simuladas (por ejemplo `AuthProvider` con `authService` mockeado) se etiquetan como "integración" por su alcance, pero se ejecutan con el resto de las pruebas unitarias. Las **pruebas de integración contra el backend real** son las de la sección 4.
 
@@ -55,7 +55,7 @@ Una precisión de vocabulario: en este informe, las pruebas de la sección 3 que
 
 | Herramienta | Rol |
 |---|---|
-| **Vitest** (4.1.9) | Test runner integrado con Vite. Comparte la misma configuración de transformación que el proyecto, lo que elimina discrepancias entre entorno de desarrollo y entorno de pruebas. Se usa con dos configuraciones: la del proyecto (unitarias, entorno jsdom) y `vitest.integration.config.ts` (integración contra el backend, entorno Node). |
+| **Vitest** (4.1.9) | Test runner integrado con Vite. Comparte la misma configuración de transformación que el proyecto, lo que elimina discrepancias entre entorno de desarrollo y entorno de pruebas. Se usa con dos configuraciones: la del proyecto (unitarias, entorno jsdom) y `vitest.integration.config.ts` (integración contra el backend, entorno Node). Las unitarias fijan la zona horaria en `America/Santiago` (`vitest.global-tz.ts`, referenciado como `globalSetup` en `vite.config.ts`) para que los defectos que dependen de la zona, como el 7 de la sección 6.1, se detecten en cualquier máquina. |
 | **React Testing Library** | Renderiza componentes React en un DOM simulado. Su filosofía central es probar el comportamiento observable por el usuario, no los detalles internos de implementación. |
 | **@testing-library/user-event** | Simula eventos de usuario (clicks, escritura) de forma realista. |
 | **@testing-library/jest-dom** | Extiende los matchers de Vitest con aserciones específicas del DOM (`toBeInTheDocument`, `toHaveTextContent`, etc.). |
@@ -78,13 +78,15 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 
 | Archivo de prueba | Tests | Estado |
 |---|---|---|
-| `events/utils/validators.test.ts` | 34 | ✓ Todos pasando |
+| `events/utils/validators.test.ts` | 35 | ✓ Todos pasando |
 | `services/storage.service.test.ts` | 7 | ✓ Todos pasando |
 | `hooks/useLocalStorage.test.ts` | 7 | ✓ Todos pasando |
 | `router/ProtectedRoute.test.tsx` | 3 | ✓ Todos pasando |
 | `auth/services/auth.services.test.ts` | 4 | ✓ Todos pasando |
 | `events/services/events.services.test.ts` | 6 | ✓ Todos pasando |
-| `context/AuthProvider.test.tsx` | 9 | ✓ Todos pasando |
+| `context/AuthProvider.test.tsx` | 10 | ✓ Todos pasando |
+| `auth/components/LogoutButton.test.tsx` | 2 | ✓ Todos pasando |
+| `utils/jwt.test.ts` | 4 | ✓ Todos pasando |
 | `events/hooks/useEvents.test.ts` | 7 | ✓ Todos pasando |
 | `events/components/EventCard.test.tsx` | 8 | ✓ Todos pasando |
 | `events/utils/filterEvents.test.ts` | 67 | ✓ Todos pasando |
@@ -94,9 +96,9 @@ Estas pruebas se ejecutan con `npm test`, no requieren el backend y usan mocks d
 | `events/utils/nearestComuna.test.ts` | 32 | ✓ Todos pasando |
 | `events/utils/comunaSearch.test.ts` | 9 | ✓ Todos pasando |
 | `events/components/map/MapView.test.tsx` | 12 | ✓ Todos pasando |
-| **Total** | **265** | **265 ✓ / 0 ✗** |
+| **Total** | **273** | **273 ✓ / 0 ✗** |
 
-(Rutas relativas a `src/features/` salvo `services/`, `hooks/`, `router/` y `context/`, que cuelgan directamente de `src/`.)
+(Rutas relativas a `src/features/` salvo `services/`, `hooks/`, `router/`, `context/` y `utils/jwt.test.ts`, que cuelgan directamente de `src/`.)
 
 ### 3.1 Validadores de Formularios
 
@@ -112,12 +114,12 @@ Los validadores de texto (`validateTitle`, `validateDescription` y `validateLoca
 | `validateTitle` | Rechazo por longitud < 3, rechazo por longitud > 100, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (100 barras son válidas, 101 no) y acepta apóstrofes, barras, comillas y `<` `>`** |
 | `validateDescription` | Rechazo por longitud < 10, rechazo por longitud > 500, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (500 barras son válidas, 501 apóstrofes no) y acepta comillas, apóstrofes, barras y etiquetas escritas como texto** |
 | `validateLocation` | Rechazo por longitud < 3, rechazo por longitud > 200, aceptación válida; **mide el largo con `trim`, cuenta cada símbolo como un carácter (200 apóstrofes son válidos, 201 no) y acepta direcciones con apóstrofes y barras** |
-| `validateDate` | Rechazo de fecha vacía, rechazo de fecha pasada, aceptación de fecha futura |
+| `validateDate` | Rechazo de fecha vacía, rechazo de fecha pasada, aceptación de fecha futura; **el día de hoy es válido y el de ayer no, a las 00:30, 12:00 y 22:30 hora local, con la zona horaria fijada en `America/Santiago`** |
 | `validateTime` | Campo opcional vacío, formato inválido, formato válido, **segundos opcionales (`HH:mm:ss`)**, rechazo de `24:00`, `20:60` y `20:00:60`, rechazo de segundos mal formados |
 | `validateTimeRange` | Hora de fin igual a inicio, hora de fin anterior, rango válido, **rango con segundos (solos o mezclados con `HH:mm`)** |
 | `validateCoordinates` | Latitud fuera de rango, longitud fuera de rango, coordenadas válidas |
 
-**Tests:** 34 (24 originales, de los cuales se eliminaron los 3 de `sanitizeText`; más 4 agregados al corregir el defecto 1 de la sección 6.1, 3 de `validateTime` y 1 de `validateTimeRange`; y 9 agregados al corregir el defecto 6, 3 por cada validador de texto) | **Resultado:** 34 ✓
+**Tests:** 35 (24 originales, de los cuales se eliminaron los 3 de `sanitizeText`; más 4 agregados al corregir el defecto 1 de la sección 6.1, 3 de `validateTime` y 1 de `validateTimeRange`; y 9 agregados al corregir el defecto 6, 3 por cada validador de texto; y 1 agregado al corregir el defecto 7, la fecha de hoy) | **Resultado:** 35 ✓
 
 ---
 
@@ -216,6 +218,7 @@ Los servicios son la capa que comunica el frontend con el backend. Se mockeó la
 |---|---|
 | Inicialización | Comienza en estado de carga, resuelve a `isLoading: false` |
 | Restauración de sesión | Recupera token y usuario desde localStorage al montar |
+| Token vencido | Si el token guardado ya venció, descarta la sesión (`clearAuth`), no configura axios y queda no autenticado |
 | Sin sesión previa | Permanece no autenticado cuando localStorage está vacío |
 | Login exitoso | Actualiza usuario, token y estado de autenticación |
 | Login — persistencia | Persiste token y usuario en localStorage, configura axios |
@@ -224,7 +227,7 @@ Los servicios son la capa que comunica el frontend con el backend. Se mockeó la
 | Register | Registra al usuario y ejecuta login automático |
 | Register — error | Expone el error al consumidor sin modificar el estado |
 
-**Tests:** 9 | **Resultado:** 9 ✓
+**Tests:** 10 | **Resultado:** 10 ✓
 
 ---
 
@@ -392,6 +395,40 @@ Con el código anterior al arreglo, 9 de estos 10 tests fallaban (el campo mostr
 
 ---
 
+### 3.15 Botón de cerrar sesión (LogoutButton)
+
+**Archivo:** `src/features/auth/components/LogoutButton.test.tsx`
+**Tipo:** Integración de componentes (usa `AuthProvider` y `ProtectedRoute` reales, sin mocks)
+
+El botón "Cerrar Sesión" llama a `logout()` del contexto y no navega por su cuenta: la redirección a `/login` la hace `ProtectedRoute` al quedar la sesión vacía. Las pruebas montan un `MemoryRouter` con una ruta protegida que solo contiene el botón.
+
+| Caso | Qué verifica |
+|---|---|
+| Cierre de sesión | Al hacer clic aparece la pantalla de login, `token` y `user` desaparecen de `localStorage` y el header `Authorization` de axios queda sin definir |
+| Ruta protegida | Tras cerrar sesión el botón ya no está en pantalla: no se puede volver a la ruta protegida |
+
+**Tests:** 2 | **Resultado:** 2 ✓
+
+---
+
+### 3.16 Vencimiento del token (isTokenExpired)
+
+**Archivo:** `src/utils/jwt.test.ts`
+**Tipo:** Unitaria pura
+
+`isTokenExpired` lee el claim `exp` del payload de un JWT (sin verificar la firma, que es responsabilidad del backend) y `AuthProvider` la usa al restaurar la sesión: como el backend no envía cabeceras CORS en sus 401 (sección 6.2), el interceptor 401 no corre en el navegador y un token vencido dejaba al usuario en pantallas con "Error al cargar eventos".
+
+| Caso | Resultado esperado |
+|---|---|
+| `exp` en el pasado | `true` |
+| `exp` en el futuro | `false` |
+| Sin `exp`, token ilegible o vacío | `false` (se deja decidir al backend) |
+| Payload con tildes (UTF-8) | Se lee correctamente |
+
+**Tests:** 4 | **Resultado:** 4 ✓
+
+---
+
 ## 4. Pruebas de integración contra el backend real
 
 **Archivos:** `tests/integration/auth.integration.test.ts` y `tests/integration/events.integration.test.ts`
@@ -453,21 +490,22 @@ Las pruebas E2E automatizan un Chromium real que navega la aplicación (servida 
 
 | Flujo | Archivo | Tests |
 |---|---|---|
-| Autenticación y sesión | `auth.e2e.ts` (7) y `smoke.e2e.ts` (3) | 10 |
+| Autenticación y sesión | `auth.e2e.ts` (12) y `smoke.e2e.ts` (3) | 15 |
 | CRUD de eventos (validación, crear, editar, eliminar) | `events-crud.e2e.ts` | 9 |
 | Mapa (popup del marcador) | `events-crud.e2e.ts` | 1 |
 | Detalle de un evento | `event-details.e2e.ts` | 8 |
 | Filtros | `events-filters.e2e.ts` (19) y `events-location-filter.e2e.ts` (9) | 28 |
 | Accesibilidad (etiquetas del formulario) | `events-crud.e2e.ts` | 2 |
 | Escritura con el teclado (`pressSequentially`) | `events-typing.e2e.ts` | 5 |
-| **Total** | **7 archivos** | **63** |
+| **Total** | **7 archivos** | **68** |
 
-### 5.2 Autenticación y sesión (10 tests)
+### 5.2 Autenticación y sesión (15 tests)
 
 - **Rutas protegidas sin sesión** (`smoke.e2e.ts`): `/events`, `/my-events` y `/events/create` redirigen a `/login`.
 - **Registro:** un usuario nuevo se registra desde la interfaz y queda con sesión iniciada; un `username` repetido muestra el error del backend y no inicia sesión.
 - **Login:** con credenciales válidas entra a `/events` y guarda la sesión; con contraseña incorrecta muestra un error y no guarda sesión.
 - **Sesión:** cerrar sesión limpia el almacenamiento y vuelve a exigir login; una sesión guardada sobrevive a recargar la página.
+- **Cierre de sesión desde cada pantalla protegida (5 tests):** en `/events`, `/my-events`, `/events/create`, `/events/:id` (con un evento creado por API) y `/events/edit/:id` (entrando con "Editar" desde `/my-events`) se inicia sesión, se hace clic en "Cerrar Sesión", se espera `/login`, se comprueba que `token` y `user` quedaron nulos en `localStorage` y que `page.goBack()` sigue dejando al usuario en `/login`.
 - **Token inválido en `localStorage`:** debe redirigir a `/login` y limpiar la sesión (interceptor 401). Esta prueba está declarada con `test.fail()` y la etiqueta `[defecto conocido del backend: el 401 no trae cabeceras CORS]` (sección 6.2).
 
 ### 5.3 CRUD de eventos (9 tests)
@@ -527,13 +565,12 @@ Estas pruebas (`events-typing.e2e.ts`) teclean con `pressSequentially`, tecla po
 
 Con el código anterior al arreglo fallan 4 de estos 5 tests; el del popup y el detalle no depende del formulario y pasa en ambos casos.
 
-**Resultado:** 63 tests (62 pasan + 1 `test.fail`), 7 archivos. Se ejecutó la suite completa 3 veces seguidas; las tres corridas terminaron con todos los tests pasando (código de salida 0) y sin tests intermitentes:
+**Resultado:** 68 tests (67 pasan + 1 `test.fail`), 7 archivos. Tras agregar el cierre de sesión por pantalla se ejecutó la suite completa 2 veces seguidas; las dos corridas terminaron con todos los tests pasando (código de salida 0) y sin tests intermitentes. Al terminar, la base no conservó ningún evento `[E2E]`:
 
 | Corrida | Resultado | Duración |
 |---|---|---|
-| 1 | 63 passed | 1,1 min |
-| 2 | 63 passed | 1,2 min |
-| 3 | 63 passed | 1,2 min |
+| 1 | 68 passed | 1,2 min |
+| 2 | 68 passed | 1,1 min |
 
 (Playwright informa las duraciones de más de un minuto en minutos, con un decimal.)
 
@@ -553,6 +590,8 @@ Las pruebas E2E y de integración, junto con revisiones manuales, detectaron def
 | 4 | **Los `label` del formulario de evento no estaban asociados a sus campos** (sin `htmlFor` ni `id`), por lo que no se podían encontrar por etiqueta ni los lectores de pantalla los leían al enfocar el campo. | Lectura del código al escribir los E2E (no se podía usar `getByLabel`); los 2 E2E nuevos fallan sin el cambio | `59e699e` — `htmlFor` e `id` (con `useId`) sin cambiar estilos ni comportamiento; 2 E2E nuevos |
 | 5 | **El filtro por comuna traía eventos de otras comunas.** Las direcciones son "lugar, comuna, Provincia de X, Región de Y, …, Chile" y el filtro buscaba el valor como subcadena de toda la dirección: "Concepción" traía también las de Talcahuano por su "Provincia de Concepción", y "Santiago" las de otras comunas por su región. En una medición manual con una base de 72 eventos de prueba, "Santiago" devolvió 26 eventos frente a 11 realmente ubicados en esa comuna, "Concepción" 24 frente a 18 y "Valparaíso" 22 frente a 12. | Prueba manual con datos sembrados, contrastando el resultado con la comuna real de cada evento | `7df7132` — si el valor es una comuna conocida se exige que un segmento de la dirección (separado por comas) sea exactamente esa comuna; el texto libre sigue buscando por subcadena. 20 tests unitarios nuevos, 1 test existente ajustado y 9 E2E |
 | 6 | **Escribir con el teclado corrompía el texto.** `handleChange` aplicaba `sanitizeText` en cada pulsación, que recortaba (`trim`) y codificaba `<`, `>`, `"`, `'` y `/` como entidades HTML: los espacios se perdían mientras se escribía (`Noche de jazz` quedaba `Nochedejazz`) y los símbolos se guardaban como entidades (`Rock's AC/DC` quedaba `Rock&#x27;sAC&#x2F;DC`). Además, los validadores medían el texto ya codificado, de modo que los símbolos contaban de más, y el contador de caracteres mostraba un valor mayor (21/100 para un título de 12 caracteres). React ya escapa el texto al renderizar (no hay `dangerouslySetInnerHTML` en `src`), por lo que codificar la entrada corrompía los datos sin agregar protección. | Al probar con escritura real (`userEvent.type`). **Los E2E iniciales no lo detectaron porque llenaban los campos con `fill()`, que inserta el valor completo de una vez y no pasa por cada pulsación.** En el backend de pruebas no había datos ya codificados | `a1e2daa` (tests que lo reproducen: 9 de 10 fallaban), `a9a6d0f` (arreglo: `handleChange` guarda el valor tal cual, los validadores miden con `trim` sin codificar y el recorte se aplica al enviar; `sanitizeText` se elimina) y `741a630` (5 E2E con `pressSequentially`; 4 fallan con el código anterior) |
+| 7 | **El día de hoy se rechazaba como fecha pasada en zonas al oeste de UTC.** `validateDate` hacía `new Date('yyyy-MM-dd')`, que JavaScript interpreta en UTC (medianoche UTC son las 21:00 del día anterior en Chile), y lo comparaba con la medianoche local de hoy: con la zona `America/Santiago`, elegir la fecha de hoy mostraba "La fecha no puede ser en el pasado". Además, el atributo `min` del campo de fecha usaba `toISOString()` (fecha UTC) y bloqueaba el día de hoy por las tardes-noches. | Revisión del código; la prueba nueva fija la zona horaria en `America/Santiago` (`vitest.global-tz.ts`) y falla con el código anterior (se comprobó revirtiendo el arreglo) | `abb2cb5` (prueba que lo reproduce) y `1c31a80` (arreglo: se compara como texto `yyyy-MM-dd` con la fecha local de hoy, usando `toLocalDateString`, y el mismo helper en el `min` del formulario) |
+| 8 | **El cierre de sesión solo estaba disponible en la pantalla de eventos.** El botón "Cerrar Sesión" existía únicamente en `EventsPage`; desde "Mis Eventos", crear, editar y el detalle de un evento no había forma de cerrar la sesión. | Revisión de las pantallas protegidas | `4435f13` (componente `LogoutButton` usado en las 5 pantallas protegidas, sin navegar a mano: la redirección la hace `ProtectedRoute`) y `3cffa51` (2 pruebas unitarias y 5 E2E, uno por pantalla) |
 
 ### 6.2 Defectos conocidos del backend, sin corregir
 
@@ -580,17 +619,17 @@ No están corregidas y no tienen prueba que las cubra (salvo indicación):
 
 | Tipo de prueba | Comando | Archivos | Tests | Resultado |
 |---|---|---|---|---|
-| Unitarias y de componentes | `npm test` | 16 | 265 | 265 pasan |
+| Unitarias y de componentes | `npm test` | 18 | 273 | 273 pasan |
 | Integración contra el backend | `npm run test:integration` | 2 | 33 | 30 pasan + 3 `expected fail` |
-| E2E (Chromium) | `npm run test:e2e` | 7 | 63 | 62 pasan + 1 `test.fail` |
-| **Total** | | **25** | **361** | **357 pasan + 4 fallos esperados (defectos conocidos del backend)** |
+| E2E (Chromium) | `npm run test:e2e` | 7 | 68 | 67 pasan + 1 `test.fail` |
+| **Total** | | **27** | **374** | **370 pasan + 4 fallos esperados (defectos conocidos del backend)** |
 
 Salida de `npm test -- --run`:
 
 ```
- Test Files  16 passed (16)
-      Tests  265 passed (265)
-   Duration  ~6 s
+ Test Files  18 passed (18)
+      Tests  273 passed (273)
+   Duration  ~7 s
 ```
 
 Salida de `npm run test:integration`:
@@ -603,9 +642,9 @@ Salida de `npm run test:integration`:
 Salida de `npm run test:e2e` (la línea marcada con ✘ es el `test.fail()` esperado):
 
 ```
-Running 63 tests using 1 worker
-  ✘   7 [chromium] › auth.e2e.ts › Sesión › un token inválido en localStorage redirige a /login ... [defecto conocido del backend: el 401 no trae cabeceras CORS]
-  63 passed
+Running 68 tests using 1 worker
+  ✘   7 [chromium] › e2e/auth.e2e.ts:144:8 › Sesión › un token inválido en localStorage redirige a /login ... [defecto conocido del backend: el 401 no trae cabeceras CORS]
+  68 passed (1.1m)
 ```
 
 Los 4 "fallos esperados" corresponden a los defectos del backend de la sección 6.2 (3 pruebas de integración con `it.fails` y 1 E2E con `test.fail()`); cada una avisará cuando el backend se corrija.
@@ -630,8 +669,8 @@ Estado de la calidad estática: `npm run build` termina sin errores (se corrigie
 
 ## 9. Conclusión
 
-La suite tiene tres niveles. Las 265 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación, los hooks, los componentes de la interfaz (incluido el formulario de evento), el filtrado y el componente del mapa, y se ejecutan en unos 6 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 63 pruebas E2E recorren los flujos principales en un navegador real: autenticación, creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
+La suite tiene tres niveles. Las 273 pruebas unitarias y de componentes cubren la lógica de negocio, los servicios, el contexto de autenticación (incluido el descarte del token vencido y el cierre de sesión), los hooks, los componentes de la interfaz (incluido el formulario de evento), el filtrado y el componente del mapa, y se ejecutan en unos 6 segundos. Las 33 pruebas de integración verifican contra el backend real el contrato de autenticación y de eventos. Las 68 pruebas E2E recorren los flujos principales en un navegador real: autenticación (incluido el cierre de sesión desde cada pantalla protegida), creación, edición y eliminación de eventos, el detalle, el mapa y los filtros.
 
-Las pruebas de integración y E2E, junto con revisiones manuales, encontraron seis defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
+Las pruebas de integración y E2E, junto con revisiones manuales, encontraron ocho defectos del frontend, que se corrigieron, y varios del backend, que quedan documentados y con sus pruebas marcadas como defecto conocido. Esas pruebas fallarán cuando el backend se corrija, lo que indicará que la marca debe retirarse.
 
 Las limitaciones de la sección 8 delimitan lo que estas pruebas garantizan: se ejecutan solo en Chromium, a mano y con el backend levantado. Los siguientes pasos naturales serían automatizar la ejecución en integración continua y resolver las observaciones pendientes de la sección 6.3.
