@@ -1,15 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { useEvents } from '../hooks/useEvents';
 import { EventCard } from '../components/EventCard';
+import { EventFilters } from '../components/EventFilters';
 import { MapView } from '../components/map/MapView';
+import { EMPTY_FILTER_CRITERIA, filterEvents } from '../utils/filterEvents';
+import type { EventFilterCriteria } from '../utils/filterEvents';
 
 export const EventsPage = () => {
   const { user, logout } = useAuth();
   const { events, isLoading, error, fetchEvents } = useEvents();
   const navigate = useNavigate();
   const [showMap, setShowMap] = useState(true);
+  const [criteria, setCriteria] = useState<EventFilterCriteria>(EMPTY_FILTER_CRITERIA);
+
+  const filteredEvents = useMemo(() => filterEvents(events, criteria), [events, criteria]);
 
   useEffect(() => {
     fetchEvents();
@@ -146,10 +152,17 @@ export const EventsPage = () => {
           </div>
         ) : (
           <>
+            {/* Filtros: visibles aunque ningún evento coincida */}
+            <EventFilters
+              criteria={criteria}
+              onChange={(patch) => setCriteria((prev) => ({ ...prev, ...patch }))}
+              onClear={() => setCriteria(EMPTY_FILTER_CRITERIA)}
+            />
+
             {/* Mapa */}
             {showMap && (
               <MapView
-                events={events}
+                events={filteredEvents}
                 height="500px"
                 onEventClick={handleEventClick}
               />
@@ -165,11 +178,25 @@ export const EventsPage = () => {
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em'
               }}>
-                {events.length} {events.length === 1 ? 'Evento' : 'Eventos'}
+                {filteredEvents.length} {filteredEvents.length === 1 ? 'Evento' : 'Eventos'}
               </h3>
-              {events.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
+              {filteredEvents.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px',
+                  backgroundColor: 'rgba(20, 18, 32, 0.85)',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                }}>
+                  <p style={{ margin: 0, fontSize: '18px', color: '#9b95ad' }}>
+                    Ningún evento coincide con los filtros.
+                  </p>
+                </div>
+              ) : (
+                filteredEvents.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))
+              )}
             </div>
           </>
         )}
