@@ -11,6 +11,7 @@ import { EventsPage } from '../features/events/pages/EventsPage';
 import { MyEventsPage } from '../features/events/pages/MyEventsPage';
 import { CreateEventPage } from '../features/events/pages/CreateEventPage';
 import { EditEventPage } from '../features/events/pages/EditEventPage';
+import { EventDetailsPage } from '../features/events/pages/EventsDetailsPage';
 
 export const AppRouter = () => {
   return (
@@ -26,6 +27,15 @@ export const AppRouter = () => {
           element={
             <ProtectedRoute>
               <EventsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={ROUTES.EVENT_DETAILS}
+          element={
+            <ProtectedRoute>
+              <EventDetailsPage />
             </ProtectedRoute>
           }
         />
