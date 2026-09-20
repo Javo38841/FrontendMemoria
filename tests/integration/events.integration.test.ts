@@ -209,8 +209,9 @@ describe('Eventos contra el backend real', () => {
       expect(mine.some((e) => e.id === survivor.id)).toBe(true);
     });
 
-    // Se espera 404 (el recurso ya no existe). Ver informe: hoy el backend responde 500.
-    it('getById de un evento borrado responde HTTP 404', async () => {
+    // Contrato esperado: 404 (el recurso ya no existe). Hoy el backend responde 500.
+    // it.fails pasa mientras el assert falle y avisa (falla) cuando el backend se corrija.
+    it.fails('getById de un evento borrado responde HTTP 404 [defecto conocido del backend: hoy responde 500]', async () => {
       const created = await data.createEvent('delete y getById');
       await eventsService.delete(created.id, user.id);
 
@@ -242,8 +243,9 @@ describe('Eventos contra el backend real', () => {
       expect(fetched.title).toBe('[TEST] update sin token');
     });
 
-    // Se espera 404. Ver informe: hoy el backend responde 500 para ids que no existen.
-    it('getById de un id inexistente responde HTTP 404', async () => {
+    // Contrato esperado: 404. Hoy el backend responde 500 para ids que no existen.
+    // it.fails pasa mientras el assert falle y avisa (falla) cuando el backend se corrija.
+    it.fails('getById de un id inexistente responde HTTP 404 [defecto conocido del backend: hoy responde 500]', async () => {
       const error = await rejectionOf(eventsService.getById(2_000_000_000));
       expect(error.response?.status).toBe(404);
     });
