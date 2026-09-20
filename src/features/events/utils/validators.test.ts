@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   validateTitle,
   validateDescription,
@@ -184,5 +184,20 @@ describe('validateCoordinates', () => {
 
   it('accepts valid coordinates', () => {
     expect(validateCoordinates(-33.4489, -70.6693)).toEqual({ isValid: true })
+  })
+})
+
+describe('validateDate — el día de hoy', () => {
+  afterEach(() => vi.useRealTimers())
+
+  it('acepta hoy y mañana, y rechaza ayer, a cualquier hora local', () => {
+    for (const [hora, minuto] of [[0, 30], [12, 0], [22, 30]]) {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(2026, 8, 20, hora, minuto))
+
+      expect(validateDate('2026-09-20')).toEqual({ isValid: true })
+      expect(validateDate('2026-09-21')).toEqual({ isValid: true })
+      expect(validateDate('2026-09-19').isValid).toBe(false)
+    }
   })
 })
