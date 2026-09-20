@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  sanitizeText,
   validateTitle,
   validateDescription,
   validateLocation,
@@ -9,20 +8,6 @@ import {
   validateTimeRange,
   validateCoordinates,
 } from './validators'
-
-describe('sanitizeText', () => {
-  it('trim whitespace', () => {
-    expect(sanitizeText('  hola  ')).toBe('hola')
-  })
-
-  it('escapes < and >', () => {
-    expect(sanitizeText('<script>')).toBe('&lt;script&gt;')
-  })
-
-  it('escapes quotes and slashes', () => {
-    expect(sanitizeText('"hello\'/path')).toBe('&quot;hello&#x27;&#x2F;path')
-  })
-})
 
 describe('validateTitle', () => {
   it('rejects titles shorter than 3 chars', () => {
@@ -35,6 +20,22 @@ describe('validateTitle', () => {
 
   it('accepts valid title', () => {
     expect(validateTitle('Evento de prueba')).toEqual({ isValid: true })
+  })
+
+  it('measures the real text: trims spaces at the ends', () => {
+    expect(validateTitle('  ab  ')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateTitle('   abc   ')).toEqual({ isValid: true })
+  })
+
+  it('counts symbols as one character each (the text is not HTML-encoded)', () => {
+    expect(validateTitle("'''")).toEqual({ isValid: true })
+    expect(validateTitle('/'.repeat(100))).toEqual({ isValid: true })
+    expect(validateTitle('/'.repeat(101))).toEqual({ isValid: false, error: expect.any(String) })
+  })
+
+  it('accepts apostrophes, slashes, quotes and angle brackets', () => {
+    expect(validateTitle("Noche de jazz - Rock's AC/DC")).toEqual({ isValid: true })
+    expect(validateTitle('"Hola" <b>mundo</b>')).toEqual({ isValid: true })
   })
 })
 
@@ -50,6 +51,20 @@ describe('validateDescription', () => {
   it('accepts valid description', () => {
     expect(validateDescription('Esta es una descripción válida')).toEqual({ isValid: true })
   })
+
+  it('measures the real text: trims spaces at the ends', () => {
+    expect(validateDescription('   corta   ')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateDescription('   ' + 'a'.repeat(10) + '   ')).toEqual({ isValid: true })
+  })
+
+  it('counts symbols as one character each (the text is not HTML-encoded)', () => {
+    expect(validateDescription('/'.repeat(500))).toEqual({ isValid: true })
+    expect(validateDescription("'".repeat(501))).toEqual({ isValid: false, error: expect.any(String) })
+  })
+
+  it('accepts apostrophes, slashes, quotes and angle brackets', () => {
+    expect(validateDescription('Con "invitados" y <b>negrita</b> en AC/DC, Rock\'s & más')).toEqual({ isValid: true })
+  })
 })
 
 describe('validateLocation', () => {
@@ -63,6 +78,20 @@ describe('validateLocation', () => {
 
   it('accepts valid location', () => {
     expect(validateLocation('Santiago, Chile')).toEqual({ isValid: true })
+  })
+
+  it('measures the real text: trims spaces at the ends', () => {
+    expect(validateLocation('  ab  ')).toEqual({ isValid: false, error: expect.any(String) })
+    expect(validateLocation('  abc  ')).toEqual({ isValid: true })
+  })
+
+  it('counts symbols as one character each (the text is not HTML-encoded)', () => {
+    expect(validateLocation("'".repeat(200))).toEqual({ isValid: true })
+    expect(validateLocation("'".repeat(201))).toEqual({ isValid: false, error: expect.any(String) })
+  })
+
+  it("accepts addresses with apostrophes and slashes (e.g. \"Población O'Higgins, Av. 1/2\")", () => {
+    expect(validateLocation("Población O'Higgins, Av. 1/2, Chile")).toEqual({ isValid: true })
   })
 })
 

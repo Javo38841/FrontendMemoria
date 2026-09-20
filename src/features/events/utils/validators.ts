@@ -1,27 +1,20 @@
 /**
- * Validadores y sanitizadores de formularios
+ * Validadores de formularios
+ *
+ * Los textos se miden tal como los escribió el usuario (con trim, sin codificar): así el largo
+ * coincide con el contador y con el maxLength de los campos. No se codifica el texto en HTML porque
+ * React ya escapa lo que renderiza (no se usa dangerouslySetInnerHTML).
  */
-
-// Sanitizar texto (prevenir XSS)
-export const sanitizeText = (text: string): string => {
-    return text
-        .trim()
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;');
-};
 
 // Validar título (3-100 caracteres)
 export const validateTitle = (title: string): { isValid: boolean; error?: string } => {
-    const sanitized = sanitizeText(title);
+    const length = title.trim().length;
 
-    if (sanitized.length < 3) {
+    if (length < 3) {
         return { isValid: false, error: 'El título debe tener al menos 3 caracteres' };
     }
 
-    if (sanitized.length > 100) {
+    if (length > 100) {
         return { isValid: false, error: 'El título no puede exceder 100 caracteres' };
     }
 
@@ -30,13 +23,13 @@ export const validateTitle = (title: string): { isValid: boolean; error?: string
 
 // Validar descripción (10-500 caracteres)
 export const validateDescription = (description: string): { isValid: boolean; error?: string } => {
-    const sanitized = sanitizeText(description);
+    const length = description.trim().length;
 
-    if (sanitized.length < 10) {
+    if (length < 10) {
         return { isValid: false, error: 'La descripción debe tener al menos 10 caracteres' };
     }
 
-    if (sanitized.length > 500) {
+    if (length > 500) {
         return { isValid: false, error: 'La descripción no puede exceder 500 caracteres' };
     }
 
@@ -45,13 +38,13 @@ export const validateDescription = (description: string): { isValid: boolean; er
 
 // Validar ubicación
 export const validateLocation = (location: string): { isValid: boolean; error?: string } => {
-    const sanitized = sanitizeText(location);
+    const length = location.trim().length;
 
-    if (sanitized.length < 3) {
+    if (length < 3) {
         return { isValid: false, error: 'La ubicación debe tener al menos 3 caracteres' };
     }
 
-    if (sanitized.length > 200) {
+    if (length > 200) {
         return { isValid: false, error: 'La ubicación no puede exceder 200 caracteres' };
     }
 

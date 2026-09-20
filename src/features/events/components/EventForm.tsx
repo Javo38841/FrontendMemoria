@@ -2,7 +2,6 @@ import { useState, useEffect, useId } from 'react';
 import { LocationPicker } from './map/LocationPicker.tsx';
 import type { Event, EventFormData } from '../types/events.types';
 import {
-    sanitizeText,
     validateTitle,
     validateDescription,
     validateLocation,
@@ -106,15 +105,15 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
     // Manejar cambios en inputs
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        const sanitizedValue = name === 'title' || name === 'description' || name === 'location'
-            ? sanitizeText(value)
-            : value;
 
-        setFormData((prev) => ({ ...prev, [name]: sanitizedValue }));
+        // El texto se guarda tal cual lo escribe el usuario. No se recorta ni se codifica mientras se
+        // escribe (hacerlo corrompía lo tecleado: "Noche de jazz" quedaba "Nochedejazz"); React escapa
+        // el texto al renderizar. El trim se aplica al validar y al enviar.
+        setFormData((prev) => ({ ...prev, [name]: value }));
 
         // Validar si el campo ya fue tocado
         if (touched[name]) {
-            const error = validateField(name, sanitizedValue);
+            const error = validateField(name, value);
             setErrors(prev => ({ ...prev, [name]: error }));
         }
     };
@@ -207,7 +206,12 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
             return;
         }
 
-        await onSubmit(formData);
+        await onSubmit({
+            ...formData,
+            title: formData.title.trim(),
+            description: formData.description.trim(),
+            location: formData.location.trim(),
+        });
     };
 
     const inputStyle = (fieldName: string) => ({
