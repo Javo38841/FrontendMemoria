@@ -1,4 +1,5 @@
 import type { Event } from '../types/events.types';
+import { COMUNAS } from '../data/comunas';
 
 export interface NearbyCriteria {
   latitude: number;
@@ -33,6 +34,9 @@ export const normalizeText = (value: string): string =>
     .replace(/\p{M}/gu, '')
     .toLowerCase()
     .trim();
+
+// Nombres de las comunas de Chile, normalizados (minúsculas y sin tildes)
+const COMUNA_NAMES = new Set(COMUNAS.map((comuna) => normalizeText(comuna.name)));
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
@@ -109,6 +113,22 @@ const matchesNearby = (event: Event, nearby?: NearbyCriteria | null): boolean =>
   );
 };
 
+// Las direcciones son "lugar, comuna, Provincia de X, Región de Y, ..., Chile". Si el valor del filtro
+// es una comuna conocida (elegida en el combo o con "Cerca de mí"), se exige que un segmento de la
+// dirección (separado por comas) sea exactamente esa comuna: así "Concepción" no trae una dirección de
+// Talcahuano por su "Provincia de Concepción", ni "Santiago" una de otra comuna por su región.
+// Si no es una comuna conocida, es texto libre y se busca como subcadena de toda la dirección.
+// `location` llega ya normalizado.
+const matchesLocation = (event: Event, location: string): boolean => {
+  if (!location) return true;
+  const address = event.location ?? '';
+
+  if (COMUNA_NAMES.has(location)) {
+    return address.split(',').some((segment) => normalizeText(segment) === location);
+  }
+  return normalizeText(address).includes(location);
+};
+
 // Devuelve un arreglo nuevo; no modifica `events`. Todos los filtros son AND.
 export const filterEvents = (
   events: Event[],
@@ -124,7 +144,7 @@ export const filterEvents = (
       if (!haystack.some((field) => field.includes(text))) return false;
     }
 
-    if (location && !normalizeText(event.location ?? '').includes(location)) return false;
+    if (!matchesLocation(event, location)) return false;
 
     if (!matchesDate(event, criteria)) return false;
 

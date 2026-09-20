@@ -133,7 +133,9 @@ describe('filterEvents — texto', () => {
 
 describe('filterEvents — ubicación por texto', () => {
   it('filters by city on the location field only', () => {
-    expect(ids(filterEvents(all, { location: 'santiago' }))).toEqual([2, 4])
+    // "Santiago" es una comuna conocida: se exige un segmento de la dirección igual a "Santiago".
+    // "Santiago, Providencia" lo tiene; "Santiago (virtual)" no (su segmento es "Santiago (virtual)").
+    expect(ids(filterEvents(all, { location: 'santiago' }))).toEqual([2])
   })
 
   it('does not match against title or description', () => {
@@ -340,3 +342,156 @@ describe('hasActiveFilters', () => {
     expect(hasActiveFilters({ nearby: { ...SANTIAGO, radiusKm: 5 } })).toBe(true)
   })
 })
+
+// Direcciones reales de Nominatim: "lugar, comuna, Provincia de X, Región de Y, [código postal,] Chile"
+const address = (id: number, location: string): Event => makeEvent({ id, title: `Evento ${id}`, location })
+
+const concepcion = address(10, 'Plaza Independencia, Concepción, Provincia de Concepción, Región del Biobío, Chile')
+const coloColo = address(11, 'Edifico Colo Colo, 660, Colo Colo, Centro, Concepción, Provincia de Concepción, Región del Biobío, 4030575, Chile')
+const talcahuano = address(12, 'Plaza de Armas de Talcahuano, Talcahuano, Provincia de Concepción, Región del Biobío, Chile')
+const sanPedro = address(13, 'Sector Laguna Grande, San Pedro de la Paz, Provincia de Concepción, Región del Biobío, Chile')
+const santiagoComuna = address(20, 'Movistar Arena, Santiago, Provincia de Santiago, Región Metropolitana de Santiago, Chile')
+const providencia = address(21, 'Costanera Center, Providencia, Provincia de Santiago, Región Metropolitana de Santiago, Chile')
+const valparaiso = address(30, 'Plaza Sotomayor, Valparaíso, Provincia de Valparaíso, Región de Valparaíso, Chile')
+const vina = address(31, 'Quinta Vergara, Viña del Mar, Provincia de Valparaíso, Región de Valparaíso, Chile')
+const chillan = address(40, 'Plaza de Armas, Chillán, Provincia de Diguillín, Región de Ñuble, Chile')
+const chillanViejo = address(41, 'Plaza de Chillán Viejo, Chillán Viejo, Provincia de Diguillín, Región de Ñuble, Chile')
+const direcciones = [
+  concepcion, coloColo, talcahuano, sanPedro, santiagoComuna, providencia, valparaiso, vina, chillan, chillanViejo,
+]
+const idsOf = (criteria: Parameters<typeof filterEvents>[1]) => ids(filterEvents(direcciones, criteria))
+
+describe('filterEvents — ubicación: comuna exacta', () => {
+  it('"Concepción" no trae una dirección de otra comuna de la "Provincia de Concepción"', () => {
+    // Talcahuano y San Pedro de la Paz dicen "Provincia de Concepción" pero no son la comuna de Concepción
+    expect(idsOf({ location: 'Concepción' })).toEqual([10, 11])
+  })
+
+  it('cada comuna de esa provincia trae solo sus propias direcciones', () => {
+    expect(idsOf({ location: 'Talcahuano' })).toEqual([12])
+    expect(idsOf({ location: 'San Pedro de la Paz' })).toEqual([13])
+  })
+
+  it('"Santiago" no trae la "Región Metropolitana de Santiago" ni la "Provincia de Santiago" de otra comuna', () => {
+    expect(idsOf({ location: 'Santiago' })).toEqual([20])
+    expect(idsOf({ location: 'Providencia' })).toEqual([21])
+  })
+
+  it('"Valparaíso" no trae Viña del Mar, que está en la "Región de Valparaíso"', () => {
+    expect(idsOf({ location: 'Valparaíso' })).toEqual([30])
+    expect(idsOf({ location: 'Viña del Mar' })).toEqual([31])
+  })
+
+  it('no distingue mayúsculas ni tildes, ni espacios alrededor', () => {
+    for (const value of ['CONCEPCION', 'concepción', 'Concepcion', '  Concepción  ']) {
+      expect(idsOf({ location: value })).toEqual([10, 11])
+    }
+    expect(idsOf({ location: 'VIÑA DEL MAR' })).toEqual([31])
+    expect(idsOf({ location: 'vina del mar' })).toEqual([31])
+  })
+
+  it('funciona con comunas de varias palabras', () => {
+    expect(idsOf({ location: 'San Pedro de la Paz' })).toEqual([13])
+    expect(idsOf({ location: 'san pedro de la paz' })).toEqual([13])
+    expect(idsOf({ location: 'Viña del Mar' })).toEqual([31])
+  })
+
+  it('una comuna cuyo nombre es prefijo de otra no trae a la otra', () => {
+    expect(idsOf({ location: 'Chillán' })).toEqual([40])
+    expect(idsOf({ location: 'Chillán Viejo' })).toEqual([41])
+  })
+
+  it('funciona con direcciones con calle, barrio y código postal', () => {
+    // "Concepción" es el 5.º segmento de la dirección de Colo Colo
+    expect(idsOf({ location: 'Concepción' })).toContain(11)
+  })
+
+  it('una dirección que es solo el nombre de la comuna coincide', () => {
+    const soloComuna = address(50, 'Concepción')
+    expect(ids(filterEvents([soloComuna, talcahuano], { location: 'Concepción' }))).toEqual([50])
+  })
+
+  it('no coincide si la comuna solo aparece dentro de otro segmento', () => {
+    // "Municipalidad de Concepción" no es igual a "Concepción": ningún segmento coincide exactamente
+    const dentro = address(51, 'Municipalidad de Concepción, Talcahuano, Provincia de Concepción, Chile')
+    expect(ids(filterEvents([dentro], { location: 'Concepción' }))).toEqual([])
+  })
+
+  it('no coincide si el nombre de la comuna solo aparece como provincia', () => {
+    // Arauco es una comuna y también una provincia ("Provincia de Arauco")
+    const canete = address(54, 'Plaza de Cañete, Cañete, Provincia de Arauco, Región del Biobío, Chile')
+    const arauco = address(55, 'Plaza de Arauco, Arauco, Provincia de Arauco, Región del Biobío, Chile')
+    expect(ids(filterEvents([canete, arauco], { location: 'Arauco' }))).toEqual([55])
+  })
+
+  it('excluye un evento sin dirección', () => {
+    const sinDireccion = makeEvent({ id: 52, location: undefined as unknown as string })
+    expect(ids(filterEvents([sinDireccion], { location: 'Concepción' }))).toEqual([])
+  })
+})
+
+describe('filterEvents — ubicación: texto libre (no es una comuna)', () => {
+  it('sigue buscando como subcadena de toda la dirección', () => {
+    // no es una comuna: coincide con las cuatro direcciones que dicen "Provincia de Concepción"
+    expect(idsOf({ location: 'Provincia de Concepción' })).toEqual([10, 11, 12, 13])
+    expect(idsOf({ location: 'Biobío' })).toEqual([10, 11, 12, 13])
+    expect(idsOf({ location: 'Región Metropolitana' })).toEqual([20, 21])
+  })
+
+  it('un texto parcial sigue siendo subcadena', () => {
+    expect(idsOf({ location: 'concep' })).toEqual([10, 11, 12, 13]) // también coincide con la provincia
+    expect(idsOf({ location: 'Plaza' })).toEqual([10, 12, 30, 40, 41])
+  })
+
+  it('una calle o un lugar se busca por subcadena', () => {
+    expect(idsOf({ location: 'Colo Colo' })).toEqual([11])
+    expect(idsOf({ location: 'movistar arena' })).toEqual([20])
+  })
+
+  it('sin distinguir mayúsculas ni tildes', () => {
+    expect(idsOf({ location: 'REGION DEL BIOBIO' })).toEqual([10, 11, 12, 13])
+  })
+
+  it('un texto con un segmento que no es una comuna conocida se busca como subcadena', () => {
+    const virtual = address(53, 'Santiago (virtual)')
+    expect(ids(filterEvents([virtual, santiagoComuna], { location: 'Santiago (virtual)' }))).toEqual([53])
+  })
+})
+
+describe('filterEvents — ubicación: el resto del filtrado no cambia', () => {
+  it('el filtro de texto ("Buscar") sigue buscando por subcadena en título, descripción y ubicación', () => {
+    // a diferencia del filtro de ubicación, "Concepción" en el texto sí coincide con la provincia
+    expect(idsOf({ text: 'Concepción' })).toEqual([10, 11, 12, 13])
+  })
+
+  it('la comuna exacta se combina con AND con texto, fecha y cercanía', () => {
+    const conDatos = direcciones.map((e) => ({
+      ...e,
+      date: e.id < 20 ? '2031-03-10' : '2031-04-10',
+      latitude: -36.8,
+      longitude: -73.0,
+    }))
+    const enConcepcion = { location: 'Concepción' }
+
+    // fecha: los eventos de Concepción son de marzo
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, dateFrom: '2031-03-01', dateTo: '2031-03-31' }))).toEqual([10, 11])
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, dateFrom: '2031-04-01' }))).toEqual([])
+    // texto: solo uno de los dos eventos de Concepción dice "Colo Colo"; Talcahuano coincide con el texto
+    // "Talcahuano" pero no con la comuna
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, text: 'Colo Colo' }))).toEqual([11])
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, text: 'Talcahuano' }))).toEqual([])
+    // cercanía
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, nearby: { latitude: -36.8, longitude: -73.0, radiusKm: 5 } })))
+      .toEqual([10, 11])
+    expect(ids(filterEvents(conDatos, { ...enConcepcion, nearby: { latitude: -33.4, longitude: -70.6, radiusKm: 5 } })))
+      .toEqual([])
+  })
+
+  it('sigue sin mutar el arreglo original', () => {
+    const copia = JSON.parse(JSON.stringify(direcciones))
+    Object.freeze(direcciones)
+    expect(() => filterEvents(direcciones, { location: 'Concepción' })).not.toThrow()
+    expect(direcciones).toEqual(copia)
+  })
+})
+
