@@ -26,3 +26,7 @@ dist-ssr
 
 # Instaladores
 claude-desktop*.deb
+
+# Playwright
+playwright-report/
+test-results/
