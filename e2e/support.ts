@@ -152,3 +152,122 @@ export async function signIn(page: Page, user: Pick<ApiUser, 'id' | 'username' |
   );
   await page.goto(target);
 }
+
+// ---------------------------------------------------------------------------
+// Servicios externos: los tests no dependen de internet
+// ---------------------------------------------------------------------------
+
+// PNG transparente de 1x1 para los tiles del mapa y los iconos de Leaflet
+const TRANSPARENT_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64'
+);
+
+// Dirección que devuelve el geocodificador simulado al hacer clic en el mapa
+export const REVERSE_GEOCODE_ADDRESS = 'Punto de prueba E2E, Concepción, Provincia de Concepción, Región del Biobío, Chile';
+
+// Intercepta tiles de OpenStreetMap, iconos de unpkg y Nominatim (búsqueda y reverse).
+// Devuelve las URLs de reverse geocoding solicitadas, para comprobar las coordenadas del clic.
+export async function stubExternalServices(page: Page): Promise<{ reverseRequests: string[] }> {
+  const reverseRequests: string[] = [];
+
+  await page.route(/^https:\/\/[a-z]\.tile\.openstreetmap\.org\//, (route) =>
+    route.fulfill({ contentType: 'image/png', body: TRANSPARENT_PNG })
+  );
+  await page.route(/^https:\/\/unpkg\.com\/leaflet@[\d.]+\/dist\/images\//, (route) =>
+    route.fulfill({ contentType: 'image/png', body: TRANSPARENT_PNG })
+  );
+  await page.route(/^https:\/\/nominatim\.openstreetmap\.org\/reverse/, (route) => {
+    reverseRequests.push(route.request().url());
+    return route.fulfill({
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ display_name: REVERSE_GEOCODE_ADDRESS }),
+    });
+  });
+  await page.route(/^https:\/\/nominatim\.openstreetmap\.org\/search/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: '[]',
+    })
+  );
+
+  return { reverseRequests };
+}
+
+// ---------------------------------------------------------------------------
+// Eventos por API
+// ---------------------------------------------------------------------------
+
+export interface ApiEvent {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  startTime: string | null;
+  endTime: string | null;
+  latitude: number;
+  longitude: number;
+  userId: number;
+}
+
+export async function createEventViaApi(
+  user: ApiUser,
+  event: {
+    title: string;
+    description?: string;
+    date: string;
+    location: string;
+    latitude: number;
+    longitude: number;
+    startTime?: string;
+    endTime?: string;
+  }
+): Promise<ApiEvent> {
+  const { status, data } = await apiCall('POST', '/events', {
+    token: user.token,
+    params: { userId: user.id },
+    body: { description: 'Evento creado por las pruebas E2E', startTime: '20:00:00', endTime: '22:00:00', ...event },
+  });
+  if (status !== 200) throw new Error(`crear evento "${event.title}" falló con HTTP ${status}`);
+  return data as ApiEvent;
+}
+
+export async function myEventsViaApi(user: ApiUser): Promise<ApiEvent[]> {
+  const { status, data } = await apiCall('GET', '/events/my-events', {
+    token: user.token,
+    params: { userId: user.id },
+  });
+  if (status !== 200) throw new Error(`listar los eventos de ${user.username} falló con HTTP ${status}`);
+  return data as ApiEvent[];
+}
+
+// Borra todos los eventos del usuario (para que cada test parta sin eventos previos)
+export async function deleteAllMyEvents(user: ApiUser): Promise<void> {
+  for (const event of await myEventsViaApi(user)) {
+    await apiCall('DELETE', `/events/${event.id}`, { token: user.token, params: { userId: user.id } });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Diálogos nativos (alert / confirm)
+// ---------------------------------------------------------------------------
+
+export interface SeenDialog {
+  type: string;
+  message: string;
+}
+
+// Registra cada diálogo y lo acepta o lo cancela. Sin un manejador, Playwright los descarta
+// solos, y un confirm descartado cancelaría el borrado.
+export function handleDialogs(page: Page, action: 'accept' | 'dismiss' = 'accept'): SeenDialog[] {
+  const seen: SeenDialog[] = [];
+  page.on('dialog', async (dialog) => {
+    seen.push({ type: dialog.type(), message: dialog.message() });
+    if (action === 'accept' || dialog.type() === 'alert') await dialog.accept();
+    else await dialog.dismiss();
+  });
+  return seen;
+}
