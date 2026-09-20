@@ -1,13 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { ComunaCombobox } from './ComunaCombobox';
 import {
   getDatePresetRange,
   hasActiveFilters,
 } from '../utils/filterEvents';
 import type { DatePreset, EventFilterCriteria } from '../utils/filterEvents';
-
-const RADIUS_OPTIONS_KM = [5, 10, 25, 50];
-const DEFAULT_RADIUS_KM = 10;
+import { findNearestComuna } from '../utils/nearestComuna';
 
 const DATE_PRESETS: { key: DatePreset; label: string }[] = [
   { key: 'today', label: 'Hoy' },
@@ -69,12 +68,13 @@ const chipStyle = (active: boolean): CSSProperties => ({
 
 export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps) => {
   const uid = useId();
-  const [radiusKm, setRadiusKm] = useState(DEFAULT_RADIUS_KM);
   const [isLocating, setIsLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  // Comuna elegida con "Cerca de mí"; el aviso se oculta si el usuario edita el campo
+  const [locatedComuna, setLocatedComuna] = useState<string | null>(null);
 
-  // Identifica la solicitud de ubicación vigente; se invalida al cancelar,
-  // limpiar o desmontar para ignorar respuestas tardías del navegador.
+  // Identifica la solicitud de ubicación vigente; se invalida al limpiar o
+  // desmontar para ignorar respuestas tardías del navegador.
   const geoRequestId = useRef(0);
 
   useEffect(() => {
@@ -83,7 +83,6 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
     };
   }, []);
 
-  const nearbyActive = Boolean(criteria.nearby);
   const active = hasActiveFilters(criteria);
 
   const isPresetActive = (preset: DatePreset): boolean => {
@@ -100,36 +99,37 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
   };
 
   const handleNearbyClick = () => {
-    if (nearbyActive) {
-      geoRequestId.current += 1;
-      setIsLocating(false);
-      onChange({ nearby: null });
-      return;
-    }
-
     if (!navigator.geolocation) {
       setGeoError('Tu navegador no soporta geolocalización.');
       return;
     }
 
     const requestId = ++geoRequestId.current;
+    const isCurrent = () => requestId === geoRequestId.current;
     setGeoError(null);
+    setLocatedComuna(null);
     setIsLocating(true);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        if (requestId !== geoRequestId.current) return;
-        setIsLocating(false);
-        onChange({
-          nearby: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            radiusKm,
-          },
-        });
+      async (position) => {
+        try {
+          const match = await findNearestComuna(position.coords.latitude, position.coords.longitude);
+          if (!isCurrent()) return;
+          if (match) {
+            onChange({ location: match.name });
+            setLocatedComuna(match.name);
+          } else {
+            setGeoError('No encontré una comuna cerca de tu ubicación. ¿Estás fuera de Chile?');
+          }
+        } catch {
+          if (!isCurrent()) return;
+          setGeoError('No se pudieron cargar los datos de comunas. Inténtalo de nuevo.');
+        } finally {
+          if (isCurrent()) setIsLocating(false);
+        }
       },
       (error) => {
-        if (requestId !== geoRequestId.current) return;
+        if (!isCurrent()) return;
         setIsLocating(false);
         setGeoError(geolocationErrorMessage(error));
       },
@@ -137,20 +137,15 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
     );
   };
 
-  const handleRadiusChange = (value: number) => {
-    setRadiusKm(value);
-    if (criteria.nearby) {
-      onChange({ nearby: { ...criteria.nearby, radiusKm: value } });
-    }
-  };
-
   const handleClear = () => {
     geoRequestId.current += 1;
     setIsLocating(false);
     setGeoError(null);
-    setRadiusKm(DEFAULT_RADIUS_KM);
+    setLocatedComuna(null);
     onClear();
   };
+
+  const showLocatedNotice = locatedComuna !== null && criteria.location === locatedComuna;
 
   return (
     <div
@@ -181,17 +176,12 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
             style={inputStyle}
           />
         </div>
-        <div>
-          <label htmlFor={`${uid}-location`} style={labelStyle}>Ciudad o comuna</label>
-          <input
-            id={`${uid}-location`}
-            type="text"
-            value={criteria.location ?? ''}
-            onChange={(e) => onChange({ location: e.target.value })}
-            placeholder="Ej: Concepción"
-            style={inputStyle}
-          />
-        </div>
+        <ComunaCombobox
+          label="Ciudad o comuna"
+          value={criteria.location ?? ''}
+          onChange={(location) => onChange({ location })}
+          placeholder="Ej: Concepción"
+        />
         <div>
           <label htmlFor={`${uid}-from`} style={labelStyle}>Desde</label>
           <input
@@ -238,31 +228,16 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
 
         <button
           type="button"
-          aria-pressed={nearbyActive}
           disabled={isLocating}
           onClick={handleNearbyClick}
           style={{
-            ...chipStyle(nearbyActive),
+            ...chipStyle(false),
             cursor: isLocating ? 'wait' : 'pointer',
             opacity: isLocating ? 0.7 : 1,
           }}
         >
           {isLocating ? 'Ubicando...' : '📍 Cerca de mí'}
         </button>
-
-        <label htmlFor={`${uid}-radius`} style={{ ...labelStyle, display: 'inline', margin: 0 }}>
-          Radio
-        </label>
-        <select
-          id={`${uid}-radius`}
-          value={radiusKm}
-          onChange={(e) => handleRadiusChange(Number(e.target.value))}
-          style={{ ...inputStyle, width: 'auto' }}
-        >
-          {RADIUS_OPTIONS_KM.map((km) => (
-            <option key={km} value={km}>{km} km</option>
-          ))}
-        </select>
 
         <button
           type="button"
@@ -283,6 +258,15 @@ export const EventFilters = ({ criteria, onChange, onClear }: EventFiltersProps)
           Limpiar filtros
         </button>
       </div>
+
+      {showLocatedNotice && (
+        <div
+          role="status"
+          style={{ marginTop: '12px', fontSize: '13px', color: '#d2b8ff' }}
+        >
+          Comuna más cercana: <strong>{locatedComuna}</strong>
+        </div>
+      )}
 
       {geoError && (
         <div

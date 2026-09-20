@@ -5,8 +5,16 @@ import { useEffect, useState } from 'react'
 import { EventFilters } from './EventFilters'
 import { EMPTY_FILTER_CRITERIA } from '../utils/filterEvents'
 import type { EventFilterCriteria } from '../utils/filterEvents'
+import { findNearestComuna, loadComunaGeometry } from '../utils/nearestComuna'
 
-const USER_POSITION = { latitude: -33.4489, longitude: -70.6693 }
+// Usa la geometría real; solo permite forzar un fallo puntual de carga
+vi.mock('../utils/nearestComuna', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/nearestComuna')>()
+  return { ...actual, findNearestComuna: vi.fn(actual.findNearestComuna) }
+})
+
+const CONCEPCION_CENTRO = { latitude: -36.827, longitude: -73.0503 }
+const MENDOZA_ARGENTINA = { latitude: -32.8895, longitude: -68.8458 }
 
 // --- Mock de navigator.geolocation -------------------------------------------
 const originalGeolocation = Object.getOwnPropertyDescriptor(navigator, 'geolocation')
@@ -23,9 +31,9 @@ const makeGeoError = (code: 1 | 2 | 3) => ({
   TIMEOUT: 3,
 })
 
-const mockGeolocationSuccess = () => {
+const mockGeolocationSuccess = (coords = CONCEPCION_CENTRO) => {
   const getCurrentPosition = vi.fn((onSuccess: PositionCallback) => {
-    onSuccess({ coords: USER_POSITION } as GeolocationPosition)
+    onSuccess({ coords } as GeolocationPosition)
   })
   setGeolocation({ getCurrentPosition })
   return getCurrentPosition
@@ -42,7 +50,7 @@ const mockGeolocationError = (code: 1 | 2 | 3) => {
 }
 
 // Geolocalización que queda pendiente hasta que el test la resuelva
-const mockGeolocationPending = () => {
+const mockGeolocationPending = (coords = CONCEPCION_CENTRO) => {
   let resolve: PositionCallback = () => {}
   const getCurrentPosition = vi.fn((onSuccess: PositionCallback) => {
     resolve = onSuccess
@@ -50,7 +58,7 @@ const mockGeolocationPending = () => {
   setGeolocation({ getCurrentPosition })
   return {
     getCurrentPosition,
-    resolve: () => resolve({ coords: USER_POSITION } as GeolocationPosition),
+    resolve: () => resolve({ coords } as GeolocationPosition),
   }
 }
 
@@ -108,41 +116,40 @@ function renderStatic(criteria: EventFilterCriteria = EMPTY_FILTER_CRITERIA) {
 
 const nearbyButton = () => screen.getByRole('button', { name: /cerca de mí|ubicando/i })
 const clearButton = () => screen.getByRole('button', { name: 'Limpiar filtros' })
+const locationInput = () => screen.getByRole('combobox', { name: 'Ciudad o comuna' })
 
 // --- Tests -------------------------------------------------------------------
 describe('EventFilters — renderizado', () => {
   it('renders all controls', () => {
     renderStatic()
     expect(screen.getByLabelText('Buscar')).toBeInTheDocument()
-    expect(screen.getByLabelText('Ciudad o comuna')).toBeInTheDocument()
+    expect(locationInput()).toBeInTheDocument()
     expect(screen.getByLabelText('Desde')).toBeInTheDocument()
     expect(screen.getByLabelText('Hasta')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Hoy' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Esta semana' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Próximos' })).toBeInTheDocument()
     expect(nearbyButton()).toBeInTheDocument()
-    expect(screen.getByLabelText('Radio')).toBeInTheDocument()
     expect(clearButton()).toBeInTheDocument()
   })
 
-  it('offers the radius options 5, 10, 25 and 50 km with 10 km by default', () => {
+  it('no longer offers a radius selector', () => {
     renderStatic()
-    const options = screen.getAllByRole('option').map((o) => o.textContent)
-    expect(options).toEqual(['5 km', '10 km', '25 km', '50 km'])
-    expect(screen.getByLabelText('Radio')).toHaveValue('10')
+    expect(screen.queryByLabelText('Radio')).not.toBeInTheDocument()
   })
 
   it('shows the values from criteria', () => {
     renderStatic({ text: 'rock', location: 'Concepción', dateFrom: '2025-03-01', dateTo: '2025-03-31' })
     expect(screen.getByLabelText('Buscar')).toHaveValue('rock')
-    expect(screen.getByLabelText('Ciudad o comuna')).toHaveValue('Concepción')
+    expect(locationInput()).toHaveValue('Concepción')
     expect(screen.getByLabelText('Desde')).toHaveValue('2025-03-01')
     expect(screen.getByLabelText('Hasta')).toHaveValue('2025-03-31')
   })
 
-  it('does not show an error alert initially', () => {
+  it('does not show an error alert or a located-comuna notice initially', () => {
     renderStatic()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 })
 
@@ -163,10 +170,21 @@ describe('EventFilters — texto y ubicación', () => {
     const { getCriteria } = renderControlled()
 
     await user.type(screen.getByLabelText('Buscar'), 'rock')
-    await user.type(screen.getByLabelText('Ciudad o comuna'), 'Ñuñoa')
+    await user.type(locationInput(), 'Ñuñoa')
 
     expect(getCriteria().text).toBe('rock')
     expect(getCriteria().location).toBe('Ñuñoa')
+  })
+
+  it('sets the location when a comuna is picked from the list', async () => {
+    const user = userEvent.setup()
+    const { getCriteria } = renderControlled()
+
+    await user.type(locationInput(), 'conce')
+    await user.click(screen.getByRole('option', { name: /^Concepción/ }))
+
+    expect(getCriteria().location).toBe('Concepción')
+    expect(locationInput()).toHaveValue('Concepción')
   })
 })
 
@@ -249,74 +267,37 @@ describe('EventFilters — fechas', () => {
   })
 })
 
-describe('EventFilters — "Cerca de mí" con geolocalización', () => {
-  it('requests the position and reports nearby with the default 10 km radius', async () => {
+describe('EventFilters — "Cerca de mí" elige la comuna más cercana', () => {
+  it('requests the position once and fills the location with the comuna', async () => {
     const user = userEvent.setup()
     const getCurrentPosition = mockGeolocationSuccess()
-    const { onChange } = renderControlled()
+    const { onChange, getCriteria } = renderControlled()
 
     await user.click(nearbyButton())
 
+    expect(await screen.findByRole('status')).toHaveTextContent('Comuna más cercana: Concepción')
     expect(getCurrentPosition).toHaveBeenCalledTimes(1)
-    expect(onChange).toHaveBeenCalledWith({
-      nearby: { latitude: USER_POSITION.latitude, longitude: USER_POSITION.longitude, radiusKm: 10 },
-    })
-    expect(nearbyButton()).toHaveAttribute('aria-pressed', 'true')
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(onChange).toHaveBeenCalledWith({ location: 'Concepción' })
+    expect(getCriteria().location).toBe('Concepción')
+    expect(locationInput()).toHaveValue('Concepción')
+    expect(getCriteria().nearby ?? null).toBeNull()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('uses the radius selected before activating', async () => {
+  it('picks the comuna that contains the position even when another centroid is closer', async () => {
+    // Antofagasta es una comuna enorme: su centroide queda a ~120 km de la ciudad
     const user = userEvent.setup()
-    mockGeolocationSuccess()
-    const { getCriteria } = renderControlled()
-
-    await user.selectOptions(screen.getByLabelText('Radio'), '25')
-    await user.click(nearbyButton())
-
-    expect(getCriteria().nearby?.radiusKm).toBe(25)
-  })
-
-  it('updates the radius of an already active nearby filter without asking the position again', async () => {
-    const user = userEvent.setup()
-    const getCurrentPosition = mockGeolocationSuccess()
+    mockGeolocationSuccess({ latitude: -23.6509, longitude: -70.3975 })
     const { getCriteria } = renderControlled()
 
     await user.click(nearbyButton())
-    await user.selectOptions(screen.getByLabelText('Radio'), '50')
 
-    expect(getCriteria().nearby).toEqual({
-      latitude: USER_POSITION.latitude,
-      longitude: USER_POSITION.longitude,
-      radiusKm: 50,
-    })
-    expect(getCurrentPosition).toHaveBeenCalledTimes(1)
+    expect(await screen.findByRole('status')).toHaveTextContent('Antofagasta')
+    expect(getCriteria().location).toBe('Antofagasta')
   })
 
-  it('does not report nearby when only the radius changes and the filter is inactive', async () => {
-    const user = userEvent.setup()
-    const getCurrentPosition = mockGeolocationSuccess()
-    const { onChange } = renderControlled()
-
-    await user.selectOptions(screen.getByLabelText('Radio'), '5')
-
-    expect(onChange).not.toHaveBeenCalled()
-    expect(getCurrentPosition).not.toHaveBeenCalled()
-  })
-
-  it('turns the filter off when clicked again', async () => {
-    const user = userEvent.setup()
-    mockGeolocationSuccess()
-    const { getCriteria } = renderControlled()
-
-    await user.click(nearbyButton())
-    expect(getCriteria().nearby).not.toBeNull()
-
-    await user.click(nearbyButton())
-    expect(getCriteria().nearby).toBeNull()
-    expect(nearbyButton()).toHaveAttribute('aria-pressed', 'false')
-  })
-
-  it('shows a loading state and disables the button while waiting for the position', async () => {
+  it('shows a loading state and disables the button while waiting', async () => {
     const user = userEvent.setup()
     const geo = mockGeolocationPending()
     const { onChange, getCriteria } = renderControlled()
@@ -326,11 +307,53 @@ describe('EventFilters — "Cerca de mí" con geolocalización', () => {
     expect(screen.getByRole('button', { name: 'Ubicando...' })).toBeDisabled()
     expect(onChange).not.toHaveBeenCalled()
 
-    // el navegador responde después
     await act(async () => geo.resolve())
 
+    expect(await screen.findByRole('status')).toBeInTheDocument()
     expect(nearbyButton()).toBeEnabled()
-    expect(getCriteria().nearby?.latitude).toBe(USER_POSITION.latitude)
+    expect(getCriteria().location).toBe('Concepción')
+  })
+
+  it('hides the notice when the user edits the location afterwards', async () => {
+    const user = userEvent.setup()
+    mockGeolocationSuccess()
+    renderControlled()
+
+    await user.click(nearbyButton())
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+
+    await user.type(locationInput(), ' Centro')
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('reports that no comuna was found when the position is outside Chile', async () => {
+    const user = userEvent.setup()
+    mockGeolocationSuccess(MENDOZA_ARGENTINA)
+    const { onChange, getCriteria } = renderControlled()
+
+    await user.click(nearbyButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no encontré una comuna/i)
+    expect(onChange).not.toHaveBeenCalled()
+    expect(getCriteria().location).toBe('')
+    expect(nearbyButton()).toBeEnabled()
+  })
+
+  it('shows an error when the comuna data cannot be loaded, and can retry', async () => {
+    const user = userEvent.setup()
+    mockGeolocationSuccess()
+    vi.mocked(findNearestComuna).mockRejectedValueOnce(new Error('sin red'))
+    const { getCriteria } = renderControlled()
+
+    await user.click(nearbyButton())
+    expect(await screen.findByRole('alert')).toHaveTextContent(/no se pudieron cargar los datos de comunas/i)
+    expect(nearbyButton()).toBeEnabled()
+
+    await user.click(nearbyButton())
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(getCriteria().location).toBe('Concepción')
   })
 
   it('ignores a late position response after the component is unmounted', async () => {
@@ -340,14 +363,17 @@ describe('EventFilters — "Cerca de mí" con geolocalización', () => {
 
     await user.click(nearbyButton())
     unmount()
-    geo.resolve()
+    await act(async () => {
+      geo.resolve()
+      await loadComunaGeometry() // deja terminar la carga diferida antes de comprobar
+    })
 
     expect(onChange).not.toHaveBeenCalled()
   })
 })
 
 describe('EventFilters — geolocalización con error', () => {
-  it('shows a message when the permission is denied and does not activate the filter', async () => {
+  it('shows a message when the permission is denied and does not change the location', async () => {
     const user = userEvent.setup()
     const getCurrentPosition = mockGeolocationError(1)
     const { onChange, getCriteria } = renderControlled()
@@ -357,8 +383,7 @@ describe('EventFilters — geolocalización con error', () => {
     expect(getCurrentPosition).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('alert')).toHaveTextContent(/permiso de ubicación denegado/i)
     expect(onChange).not.toHaveBeenCalled()
-    expect(getCriteria().nearby).toBeNull()
-    expect(nearbyButton()).toHaveAttribute('aria-pressed', 'false')
+    expect(getCriteria().location).toBe('')
     expect(nearbyButton()).toBeEnabled()
   })
 
@@ -404,8 +429,9 @@ describe('EventFilters — geolocalización con error', () => {
     mockGeolocationSuccess()
     await user.click(nearbyButton())
 
+    expect(await screen.findByRole('status')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(getCriteria().nearby).not.toBeNull()
+    expect(getCriteria().location).toBe('Concepción')
   })
 })
 
@@ -420,7 +446,6 @@ describe('EventFilters — limpiar filtros', () => {
     ['location', { location: 'Santiago' }],
     ['dateFrom', { dateFrom: '2025-01-01' }],
     ['dateTo', { dateTo: '2025-01-01' }],
-    ['nearby', { nearby: { ...USER_POSITION, radiusKm: 10 } }],
   ])('is enabled when %s is active', (_name, criteria) => {
     renderStatic(criteria)
     expect(clearButton()).toBeEnabled()
@@ -435,26 +460,23 @@ describe('EventFilters — limpiar filtros', () => {
     expect(onClear).toHaveBeenCalledTimes(1)
   })
 
-  it('resets every field, the radius and the nearby filter', async () => {
+  it('resets every field and the located-comuna notice', async () => {
     const user = userEvent.setup()
     mockGeolocationSuccess()
     const { getCriteria } = renderControlled()
 
     await user.type(screen.getByLabelText('Buscar'), 'rock')
-    await user.type(screen.getByLabelText('Ciudad o comuna'), 'Santiago')
     await user.type(screen.getByLabelText('Desde'), '2025-03-10')
-    await user.selectOptions(screen.getByLabelText('Radio'), '50')
     await user.click(nearbyButton())
-    expect(getCriteria().nearby?.radiusKm).toBe(50)
+    expect(await screen.findByRole('status')).toBeInTheDocument()
 
     await user.click(clearButton())
 
     expect(getCriteria()).toEqual(EMPTY_FILTER_CRITERIA)
     expect(screen.getByLabelText('Buscar')).toHaveValue('')
-    expect(screen.getByLabelText('Ciudad o comuna')).toHaveValue('')
+    expect(locationInput()).toHaveValue('')
     expect(screen.getByLabelText('Desde')).toHaveValue('')
-    expect(screen.getByLabelText('Radio')).toHaveValue('10')
-    expect(nearbyButton()).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(clearButton()).toBeDisabled()
   })
 
