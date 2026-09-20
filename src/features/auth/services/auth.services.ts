@@ -15,7 +15,6 @@ export const authService = {
       username: credentials.username,
       password: credentials.password,
     });
-    console.log('LOGIN RAW RESPONSE =>', response.data);
     return response.data;
   },
 

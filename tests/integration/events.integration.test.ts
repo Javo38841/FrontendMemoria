@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { setAuthToken } from '../../src/services/api.config';
 import { eventsService } from '../../src/features/events/services/events.services';
 import {
@@ -15,14 +15,11 @@ let data: TestData;
 
 beforeAll(async () => {
   await assertBackendAvailable();
-  // authService.login imprime la respuesta completa (incluye el JWT); se silencia en las pruebas
-  vi.spyOn(console, 'log').mockImplementation(() => {});
   user = await registerAndLogin('events');
   data = new TestData(user);
 });
 
 afterAll(async () => {
-  vi.restoreAllMocks();
   if (data) await data.cleanup();
 });
 
