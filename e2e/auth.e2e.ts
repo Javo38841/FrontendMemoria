@@ -3,10 +3,13 @@ import {
   assertBackendAvailable,
   cleanupUser,
   cleanupUserIfExists,
+  createEventViaApi,
   createUserViaApi,
   credentialsFor,
   loginViaApi,
   signIn,
+  stubExternalServices,
+  type ApiEvent,
   type ApiUser,
 } from './support';
 
@@ -150,4 +153,51 @@ test.describe('Sesión', () => {
     expect(saved.token).toBeNull();
     expect(saved.user).toBeNull();
   });
+});
+
+test.describe('Cierre de sesión desde cada pantalla protegida', () => {
+  let event: ApiEvent;
+
+  test.beforeAll(async () => {
+    // cleanupUser (afterAll de arriba) borra este evento junto con el usuario
+    event = await createEventViaApi(user, {
+      title: `[E2E] ${Date.now()} cierre de sesión`,
+      date: '2031-06-15',
+      location: 'Plaza Independencia, Concepción, Provincia de Concepción, Región del Biobío, Chile',
+      latitude: -36.827,
+      longitude: -73.0503,
+    });
+  });
+
+  const pantallas: { nombre: string; abrir: (page: import('@playwright/test').Page) => Promise<void> }[] = [
+    { nombre: '/events', abrir: (page) => signIn(page, user, '/events') },
+    { nombre: '/my-events', abrir: (page) => signIn(page, user, '/my-events') },
+    { nombre: '/events/create', abrir: (page) => signIn(page, user, '/events/create') },
+    { nombre: '/events/:id', abrir: (page) => signIn(page, user, `/events/${event.id}`) },
+    {
+      nombre: '/events/edit/:id',
+      abrir: async (page) => {
+        await signIn(page, user, '/my-events');
+        await page.getByRole('button', { name: /Editar/ }).click();
+        await expect(page.getByRole('heading', { name: 'Editar Evento' })).toBeVisible();
+      },
+    },
+  ];
+
+  for (const { nombre, abrir } of pantallas) {
+    test(`cerrar sesión desde ${nombre} limpia la sesión y no se puede volver atrás`, async ({ page }) => {
+      await stubExternalServices(page);
+      await abrir(page);
+
+      await page.getByRole('button', { name: 'Cerrar Sesión' }).click();
+
+      await expect(page).toHaveURL(/\/login$/);
+      const saved = await storage(page);
+      expect(saved.token).toBeNull();
+      expect(saved.user).toBeNull();
+
+      await page.goBack();
+      await expect(page).toHaveURL(/\/login$/);
+    });
+  }
 });
