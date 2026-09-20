@@ -2,7 +2,7 @@ import { Marker, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import type { EventMarkerProps } from '../../types/events.types';
 
-export const EventMarker = ({ event, onClick }: EventMarkerProps) => {
+export const EventMarker = ({ event }: EventMarkerProps) => {
   const navigate = useNavigate();
 
   if (!event.latitude || !event.longitude) return null;

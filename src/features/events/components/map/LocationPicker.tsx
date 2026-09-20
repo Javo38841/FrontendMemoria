@@ -39,13 +39,13 @@ function MapClickHandler({ onLocationSelect }: { onLocationSelect: (lat: number,
     return null;
 }
 
-export const LocationPicker = ({ latitude, longitude, location, onLocationChange }: LocationPickerProps) => {
+export const LocationPicker = ({ latitude, longitude, onLocationChange }: LocationPickerProps) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showResults, setShowResults] = useState(false);
     const [position, setPosition] = useState<LatLng>(new LatLng(latitude, longitude));
-    const searchTimeoutRef = useRef<NodeJS.Timeout>();
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
     // Búsqueda de direcciones con debounce
     useEffect(() => {
