@@ -225,6 +225,15 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
         marginTop: '4px',
     };
 
+    // Línea de error que ocupa siempre su espacio (invisible si no hay mensaje). Así, al salir de un
+    // campo y aparecer su error, el layout no se mueve y el botón de enviar no se desplaza bajo el cursor
+    // (si se desplazaba entre mousedown y mouseup, el clic se perdía).
+    const reservedError = (message?: string) => (
+        <div style={{ ...errorStyle, visibility: message ? 'visible' : 'hidden' }}>
+            {message || '\u00A0'}
+        </div>
+    );
+
     const labelStyle = {
         display: 'block',
         marginBottom: '5px',
@@ -253,9 +262,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                 <div style={{ fontSize: '12px', color: '#7c7790', marginTop: '4px' }}>
                     {formData.title.length}/100 caracteres
                 </div>
-                {touched.title && errors.title && (
-                    <div style={errorStyle}>{errors.title}</div>
-                )}
+                {reservedError(touched.title ? errors.title : undefined)}
             </div>
 
             {/* Descripción */}
@@ -280,9 +287,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                 <div style={{ fontSize: '12px', color: '#7c7790', marginTop: '4px' }}>
                     {formData.description.length}/500 caracteres
                 </div>
-                {touched.description && errors.description && (
-                    <div style={errorStyle}>{errors.description}</div>
-                )}
+                {reservedError(touched.description ? errors.description : undefined)}
             </div>
 
             {/* LocationPicker (integrado) */}
@@ -315,9 +320,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                         min={new Date().toISOString().split('T')[0]}
                         style={{ ...inputStyle('date'), colorScheme: 'dark' }}
                     />
-                    {touched.date && errors.date && (
-                        <div style={errorStyle}>{errors.date}</div>
-                    )}
+                    {reservedError(touched.date ? errors.date : undefined)}
                 </div>
 
                 <div>
@@ -354,9 +357,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                 {touched.endTime && errors.endTime && (
                     <div style={errorStyle}>{errors.endTime}</div>
                 )}
-                {errors.timeRange && (
-                    <div style={errorStyle}>{errors.timeRange}</div>
-                )}
+                {reservedError(errors.timeRange)}
             </div>
 
             {/* Botones */}
