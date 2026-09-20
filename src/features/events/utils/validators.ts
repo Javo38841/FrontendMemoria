@@ -6,6 +6,8 @@
  * React ya escapa lo que renderiza (no se usa dangerouslySetInnerHTML).
  */
 
+import { toLocalDateString } from './filterEvents';
+
 // Validar título (3-100 caracteres)
 export const validateTitle = (title: string): { isValid: boolean; error?: string } => {
     const length = title.trim().length;
@@ -51,17 +53,14 @@ export const validateLocation = (location: string): { isValid: boolean; error?: 
     return { isValid: true };
 };
 
-// Validar fecha (no puede ser en el pasado)
+// Se compara como texto yyyy-MM-dd con la fecha LOCAL de hoy: new Date('yyyy-MM-dd') se interpreta en UTC
+// y en zonas al oeste de UTC (Chile) el día de hoy se consideraría pasado.
 export const validateDate = (date: string): { isValid: boolean; error?: string } => {
     if (!date) {
         return { isValid: false, error: 'La fecha es obligatoria' };
     }
 
-    const selectedDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate < today) {
+    if (date < toLocalDateString(new Date())) {
         return { isValid: false, error: 'La fecha no puede ser en el pasado' };
     }
 

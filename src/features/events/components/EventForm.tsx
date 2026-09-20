@@ -10,6 +10,7 @@ import {
     validateTimeRange,
     validateCoordinates,
 } from '../../events/utils/validators';
+import { toLocalDateString } from '../utils/filterEvents';
 
 interface EventFormProps {
     event?: Event;
@@ -326,7 +327,7 @@ export const EventForm = ({ event, onSubmit, onCancel, isLoading }: EventFormPro
                         onChange={handleChange}
                         onBlur={() => handleBlur('date')}
                         required
-                        min={new Date().toISOString().split('T')[0]}
+                        min={toLocalDateString(new Date())}
                         style={{ ...inputStyle('date'), colorScheme: 'dark' }}
                     />
                     {reservedError(touched.date ? errors.date : undefined)}
