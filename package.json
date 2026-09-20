@@ -8,8 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
+    "test": "vitest --exclude \"tests/integration/**\"",
+    "test:ui": "vitest --ui --exclude \"tests/integration/**\"",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "axios": "^1.13.2",
